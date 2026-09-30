@@ -53,6 +53,10 @@ $env:ConnectionStrings__SqlServer = 'Server=localhost;Database=JobTot;Trusted_Co
 
 ## API hiện có
 
+Đã có API đăng ký/đăng nhập ứng viên bằng email hoặc số điện thoại, ghi nhớ đăng nhập,
+lấy thông tin phiên và đăng xuất. Xem [hướng dẫn tích hợp frontend và thử Swagger](docs/candidate-auth.md).
+Áp dụng migration `AddCandidateAuthentication` bằng lệnh `dotnet ef database update` ở trên trước khi dùng.
+
 | Method | Endpoint | Chức năng |
 |---|---|---|
 | GET | `/api/companies?page=1&pageSize=20` | Danh sách công ty |
@@ -89,10 +93,10 @@ dotnet ef migrations script --idempotent --project src/JobTot.Infrastructure --s
 
 ## Phạm vi và bước phát triển tiếp
 
-Đây là nền tảng chạy local, chưa phải hệ thống tuyển dụng hoàn chỉnh. Chưa có đăng nhập,
-phân quyền hoặc kiểm tra quyền sở hữu công ty: hiện mọi người gọi API đều có thể tạo/sửa/đóng tin.
-Cần bổ sung ASP.NET Core Identity/JWT, vai trò Admin/Employer/Candidate và quyền sở hữu
-trước khi mở API ra Internet. Các module ứng viên, CV, ứng tuyển, email và upload file chưa triển khai.
+Đã có đăng ký/đăng nhập ứng viên bằng cookie HttpOnly và policy CandidateOnly.
+Chưa có đăng nhập nhà tuyển dụng/Admin hoặc kiểm tra quyền sở hữu công ty:
+các API công ty/tin tuyển dụng hiện vẫn cho phép gọi tạo/sửa/đóng tin mà chưa xác thực.
+Các chức năng OAuth, quên mật khẩu, xác minh email/SMS, quản lý CV, ứng tuyển và upload file chưa triển khai.
 
 Chọn .NET 9 để phù hợp SDK đang có trên máy. .NET 9 hết hỗ trợ ngày 10/11/2026;
 nên nâng lên .NET 10 LTS trước khi triển khai dài hạn (cập nhật SDK, TargetFramework, EF Core,
