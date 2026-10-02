@@ -27,4 +27,8 @@ public sealed class CandidateAuthRepository(RecruitmentDbContext db) : ICandidat
     }
 
     public async Task SaveChangesAsync(CancellationToken ct) => await db.SaveChangesAsync(ct);
+
+    public async Task<bool> ResetPasswordAsync(Guid id, string expectedHash, string newHash, CancellationToken ct)
+        => await db.AccountRecords.Where(x => x.Id == id && x.PasswordHash == expectedHash)
+            .ExecuteUpdateAsync(update => update.SetProperty(x => x.PasswordHash, newHash), ct) == 1;
 }

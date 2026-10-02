@@ -8,6 +8,8 @@ public sealed class RecruitmentDbContext(DbContextOptions<RecruitmentDbContext> 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<JobPost> Jobs => Set<JobPost>();
     public DbSet<Account> AccountRecords => Set<Account>();
+    public DbSet<CandidateRefreshSession> CandidateRefreshSessions => Set<CandidateRefreshSession>();
+    public DbSet<UsedCandidateRefreshToken> UsedCandidateRefreshTokens => Set<UsedCandidateRefreshToken>();
     public DbSet<ExternalLogin> ExternalLoginRecords => Set<ExternalLogin>();
     public DbSet<Province> ProvinceRecords => Set<Province>();
     public DbSet<Industry> IndustryRecords => Set<Industry>();
@@ -42,6 +44,17 @@ public sealed class RecruitmentDbContext(DbContextOptions<RecruitmentDbContext> 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ErdModelConfiguration.Configure(modelBuilder);
+        var session = modelBuilder.Entity<CandidateRefreshSession>();
+        session.HasKey(x => x.Id);
+        session.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+        session.Property(x => x.PasswordStamp).HasMaxLength(64).IsRequired();
+        session.Property(x => x.Version).IsConcurrencyToken();
+        session.HasOne<Account>().WithMany().HasForeignKey(x => x.AccountId).OnDelete(DeleteBehavior.Cascade);
+        session.HasIndex(x => x.AccountId);
+        var usedToken = modelBuilder.Entity<UsedCandidateRefreshToken>();
+        usedToken.HasKey(x => x.TokenHash);
+        usedToken.Property(x => x.TokenHash).HasMaxLength(64);
+        usedToken.HasOne<CandidateRefreshSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
         var company = modelBuilder.Entity<Company>();
         company.HasKey(x => x.Id);
         company.Property(x => x.Name).HasMaxLength(200).IsRequired();

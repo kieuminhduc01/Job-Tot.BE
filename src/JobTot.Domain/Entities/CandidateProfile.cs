@@ -2,6 +2,7 @@ namespace JobTot.Domain.Entities;
 
 public sealed class CandidateProfile : AuditableEntity
 {
+    public string? DetailsJson { get; set; }
     public Guid AccountId { get; set; }
     public Account Account { get; set; } = null!;
     public Guid? ProvinceId { get; set; }

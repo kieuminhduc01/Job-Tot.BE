@@ -1,17 +1,23 @@
 using System.ComponentModel.DataAnnotations;
 using JobTot.Application;
+using JobTot.Application.Companies;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobTot.Api.Controllers;
 
 [ApiController]
 [Route("api/companies")]
-public sealed class CompaniesController(RecruitmentService service) : ControllerBase
+public sealed class CompaniesController(RecruitmentService service, ICompanyDirectoryRepository directory) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PageResult<CompanyDto>>> List(CancellationToken ct,
-        [FromQuery, Range(1, 1000000)] int page = 1, [FromQuery, Range(1, 100)] int pageSize = 20)
-        => Ok(await service.GetCompaniesAsync(page, pageSize, ct));
+    public async Task<ActionResult<PageResult<CompanyListingDto>>> List([FromQuery] CompanySearch search, CancellationToken ct)
+        => Ok(await directory.SearchAsync(search, ct));
+    [HttpGet("filters")]
+    public async Task<ActionResult<CompanyDirectoryMetadata>> Filters(CancellationToken ct)
+        => Ok(await directory.MetadataAsync(ct));
+    [HttpGet("featured")]
+    public async Task<ActionResult<IReadOnlyList<CompanyListingDto>>> Featured(CancellationToken ct)
+        => Ok((await directory.SearchAsync(new CompanySearch { VerifiedOnly = true, HiringOnly = true, Sort = "jobs", PageSize = 4 }, ct)).Items);
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CompanyDto>> Get(Guid id, CancellationToken ct)
         => Ok(await service.GetCompanyAsync(id, ct));

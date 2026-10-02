@@ -2,28 +2,38 @@ using JobTot.Api;
 using JobTot.Application;
 using JobTot.Infrastructure;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-// MVC view services register the authorization filter used by AutoValidateAntiforgeryToken.
-builder.Services.AddControllersWithViews();
-builder.Services.AddOpenApi(options => options.AddOperationTransformer((operation, context, ct) =>
+builder.Services.AddControllers();
+builder.Services.AddOpenApi(options =>
 {
-    if (context.Description.RelativePath?.StartsWith("api/candidate/auth/") == true &&
-        context.Description.HttpMethod == "POST")
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        operation.Parameters ??= [];
-        operation.Parameters.Add(new OpenApiParameter
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
         {
-            Name = CandidateAuthentication.CsrfHeader, In = ParameterLocation.Header, Required = true,
-            Description = "Get token from GET /api/candidate/auth/csrf. Get a fresh token after login/register.",
-            Schema = new OpenApiSchema { Type = "string" }
-        });
-    }
-    return Task.CompletedTask;
-}));
+            Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT"
+        };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, ct) =>
+    {
+        var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+        if (metadata.OfType<IAuthorizeData>().Any() && !metadata.OfType<IAllowAnonymous>().Any())
+            operation.Security = [new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecurityScheme { Reference = new OpenApiReference
+                    { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = []
+            }];
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddCandidateAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
+builder.Services.AddScoped<PasswordRecovery>();
+builder.Services.AddScoped<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddScoped<RecruitmentService>();

@@ -1,170 +1,77 @@
-# Đăng ký và đăng nhập ứng viên
+# Candidate authentication: JWT access and rotating refresh tokens
 
-Backend cung cấp API cho hai form đăng ký/đăng nhập. Repository này chưa có mã frontend.
-Đăng nhập Google, LinkedIn, Facebook và quên mật khẩu chưa được triển khai; cần cấu hình
-OAuth và dịch vụ gửi email/SMS trước khi nối các nút tương ứng.
+Candidate login and registration accept email or Vietnamese mobile number plus password. Passwords continue to use ASP.NET Core Identity PasswordHasher. Password recovery configuration is in [password-recovery.md](password-recovery.md).
 
-## Chạy lần đầu
+## Local setup
 
-Dừng API đang chạy trước khi build/migration để tránh khóa DLL:
+Apply migrations from `BE/JobTot`, then restart the API in Visual Studio:
 
 ```powershell
-dotnet tool restore
 dotnet ef database update --project src/JobTot.Infrastructure --startup-project src/JobTot.Api
 dotnet run --project src/JobTot.Api --launch-profile http
 ```
 
-Migration `AddCandidateAuthentication` cho phép `Account.Email` null khi đăng ký bằng
-số điện thoại và tạo unique index cho `Account.Phone`. Nếu database đã có số điện thoại
-trùng, cần xử lý dữ liệu trùng trước khi áp dụng; migration không xóa tài khoản.
-Không rollback migration khi đã có tài khoản chỉ dùng số điện thoại mà chưa bổ sung email.
+If Visual Studio locks the Debug binaries, migration and tests can use `--configuration Jwt`. Migration `AddCandidateRefreshSessions` adds two tables; it does not remove existing accounts or profiles. Existing authentication cookies are no longer accepted; sign in again.
 
-## API và dữ liệu
+## API contract
 
 Prefix: `/api/candidate/auth`.
 
-| Method | Path | Kết quả |
-|---|---|---|
-| GET | `/csrf` | `{ "token": "...", "headerName": "X-CSRF-TOKEN" }` và cookie CSRF |
-| POST | `/register` | 201, tạo Account và CandidateProfile cùng transaction, tự đăng nhập |
-| POST | `/login` | 200, đăng nhập ứng viên |
-| GET | `/me` | 200, thông tin ứng viên; 401 nếu chưa đăng nhập hoặc tài khoản không khả dụng |
-| POST | `/logout` | 204, xóa cookie đăng nhập trên trình duyệt hiện tại |
+| Method | Path | Request / result |
+| --- | --- | --- |
+| POST | `/register` | `{ fullName, emailOrPhone, password, confirmPassword }`; 201, account and token pair |
+| POST | `/login` | `{ emailOrPhone, password, rememberMe }`; 200, account and token pair |
+| POST | `/refresh` | `{ refreshToken }`; 200, account and NEW token pair; 401 if invalid |
+| GET | `/me` | Bearer access token; 200, account; 401 if invalid or expired |
+| POST | `/logout` | `{ refreshToken }`; 204, revokes the whole login session, including access tokens |
+| POST | `/forgot-password` | `{ email }`; generic delivery result |
+| POST | `/reset-password` | `{ token, password, confirmPassword }`; 204 |
 
-Đăng ký:
-
-```json
-{
-  "fullName": "Nguyễn Văn A",
-  "emailOrPhone": "ungvien@example.com",
-  "password": "matkhau123",
-  "confirmPassword": "matkhau123"
-}
-```
-
-Đăng nhập:
-
-```json
-{
-  "emailOrPhone": "ungvien@example.com",
-  "password": "matkhau123",
-  "rememberMe": true
-}
-```
-
-`emailOrPhone` nhận email hoặc số di động Việt Nam, ví dụ `0912345678`, `+84912345678`.
-Email được trim và chuyển về chữ thường. Số điện thoại lưu dạng `+84…`, bỏ khoảng trắng,
-dấu chấm, gạch ngang và ngoặc. Một tài khoản đăng ký bằng email đăng nhập bằng email đó;
-tài khoản đăng ký bằng số điện thoại đăng nhập bằng số đó. Chưa có API liên kết thêm email/số điện thoại.
-Họ tên bắt buộc, tối đa 200 ký tự; mật khẩu 8–128 ký tự và xác nhận phải khớp.
-Mật khẩu được băm bằng ASP.NET Core Identity PasswordHasher, không lưu hoặc trả mật khẩu rõ.
-Email/số điện thoại chưa được xác minh quyền sở hữu; `EmailVerifiedAt` vẫn null.
-
-Đăng ký/đăng nhập trả:
+Login/register/refresh return:
 
 ```json
 {
   "account": {
     "id": "<account-guid>",
     "candidateProfileId": "<profile-guid>",
-    "fullName": "Nguyễn Văn A",
-    "email": "ungvien@example.com",
+    "fullName": "Candidate",
+    "email": "candidate@example.com",
     "phone": null,
     "accountType": "Candidate"
   },
-  "expiresAt": "<UTC timestamp>"
+  "accessToken": "<signed JWT>",
+  "refreshToken": "<opaque random token>",
+  "expiresAt": "<access expiry UTC>",
+  "refreshExpiresAt": "<absolute refresh/session expiry UTC>"
 }
 ```
 
-`/me` trả trực tiếp đối tượng `account`. Không có password hash trong response.
+JWT access tokens last up to 15 minutes and include the account, Candidate role, login-session ID and unique token ID. Refresh tokens last 8 hours, or 30 days with `rememberMe: true`. Refresh does not extend the original session deadline. The API stores SHA-256 hashes of refresh tokens, never the raw refresh token. Each refresh consumes the previous token and records its hash. Reusing a consumed token revokes that login session. Optimistic concurrency prevents two simultaneous rotations from both succeeding. Other devices have independent sessions.
 
-## Kết nối frontend
+Protected endpoints require `Authorization: Bearer <accessToken>`. They validate signature, issuer, audience, lifetime, session revocation, account/profile status and password stamp. Changing the password makes existing access and refresh tokens unusable. No cookie authentication or `/csrf` request is used. Logout accepts the refresh token so it also works after access-token expiration.
 
-Xác thực dùng cookie `JobTot.Candidate` có HttpOnly, không dùng token trong localStorage.
-Mọi request gửi `credentials: "include"`. Các request POST cần header `X-CSRF-TOKEN`
-và cookie CSRF từ `/csrf`. Lấy token mới sau khi trạng thái đăng nhập thay đổi;
-helper dưới đây lấy mới trước mỗi POST để xử lý việc đó tự động.
+## Frontend storage and renewal
 
-```javascript
-const API = "http://localhost:5049/api/candidate/auth";
+`FE/src/shared/api/candidate-session.js` owns storage and authorized fetches. Both tokens are stored under `jobtot.candidate.tokens`: sessionStorage by default and localStorage with Remember me. Reloading the page preserves the session. Closing the tab ends sessionStorage persistence. Both storage locations are cleared on logout and definitive refresh rejection. Browser storage is accessible to JavaScript, so preventing XSS is essential.
 
-async function authRequest(path, body) {
-  const options = { credentials: "include" };
-  if (body !== undefined) {
-    const csrfResponse = await fetch(`${API}/csrf`, options);
-    if (!csrfResponse.ok) throw new Error("Không lấy được mã xác thực yêu cầu.");
-    const csrf = await csrfResponse.json();
-    options.method = "POST";
-    options.headers = {
-      "Content-Type": "application/json",
-      [csrf.headerName]: csrf.token,
-    };
-    options.body = JSON.stringify(body);
-  }
-  const response = await fetch(`${API}${path}`, options);
-  if (response.status === 204) return;
-  const data = await response.json();
-  if (!response.ok) {
-    const error = new Error(data.detail || data.title || "Yêu cầu không thành công.");
-    error.status = response.status;
-    error.errors = data.errors; // Lỗi validation theo trường để hiển thị trên form.
-    throw error;
-  }
-  return data;
-}
+On a protected 401, the client rotates the refresh token and retries the request once. Concurrent requests share one refresh promise. Web Locks serialize refreshes across tabs for persistent sessions where supported. A response arriving after logout cannot recreate the session. Temporary network/server errors preserve the token pair. CV downloads use an authorized fetch and a temporary blob URL; tokens are not placed in download URLs.
 
-// Gọi từ sự kiện submit form; hiển thị lỗi trong catch và tắt loading trong finally.
-const register = (form) => authRequest("/register", form);
-const login = (form) => authRequest("/login", form);
-const getCurrentCandidate = () => authRequest("/me");
-const logout = () => authRequest("/logout", {});
-```
+## Signing-key configuration
 
-Không chọn ghi nhớ: cookie phiên trình duyệt, ticket hết hạn sau 8 giờ.
-Chọn ghi nhớ: cookie tồn tại tối đa 30 ngày. Không gia hạn tự động.
-Đăng ký tự đăng nhập bằng cookie phiên. Đăng xuất xóa cookie của trình duyệt hiện tại;
-chưa có chức năng thu hồi tất cả phiên trên các thiết bị khác.
-Mỗi request xác thực kiểm tra lại trạng thái Account và CandidateProfile trong database.
-Tài khoản khác loại `Candidate`, bị khóa, inactive hoặc deleted không được dùng API ứng viên.
+Production requires `Jwt__SigningKey`: a Base64-encoded cryptographically random key of at least 32 bytes. Set it through environment variables or a secret provider; never commit it. Optional `Jwt__Issuer` and `Jwt__Audience` default to `JobTot.Api` and `JobTot.Web`. All API instances must use the same key, issuer and audience. Production uses HTTPS.
 
-Development cho phép CORS từ `http://localhost:3000` và `http://localhost:5173`.
-Đổi `Cors:AllowedOrigins` nếu frontend dùng cổng khác. Dùng cùng scheme/hostname khi phát triển
-(ví dụ cả frontend lẫn API đều dùng HTTP localhost). Cookie SameSite=Lax phù hợp same-site;
-khi triển khai nên dùng cùng site qua reverse proxy hoặc các subdomain cùng site, cùng HTTPS.
-Production cookie luôn Secure; cấu hình origin chính xác và lưu Data Protection keys bền vững
-khi chạy container hoặc nhiều instance để các instance đọc được cùng cookie.
+Development without a configured key creates a random in-memory key at startup. Restarting invalidates old access tokens; a still-valid refresh token obtains a new access token. Configure a shared key for multiple development instances.
 
-## Thử bằng Swagger
+Password recovery still uses Data Protection; keep those keys persistent across production restarts/instances. CORS allows only `Cors:AllowedOrigins`, with Authorization and Content-Type headers, and does not enable cookie credentials. Auth/recovery/refresh requests are rate limited per IP.
 
-1. Mở `http://localhost:5049/swagger`.
-2. Gọi `GET /api/candidate/auth/csrf`, copy `token` trong response.
-3. Gọi register/login, điền token vào ô header `X-CSRF-TOKEN` và điền JSON body.
-4. Gọi `/me`; trình duyệt tự gửi cookie đã nhận.
-5. Lấy token mới từ `/csrf` trước khi gọi `/logout`.
+## Swagger and checks
 
-## Lỗi và kiểm thử
-
-| HTTP | Ý nghĩa |
-|---|---|
-| 400 | Dữ liệu sai hoặc thiếu/sai CSRF token |
-| 401 | Sai thông tin đăng nhập, tài khoản không khả dụng, hoặc chưa đăng nhập |
-| 403 | Không có quyền ứng viên |
-| 409 | Email hoặc số điện thoại đã đăng ký |
-| 429 | Quá 10 request đăng ký/đăng nhập trong 1 phút trên một IP |
-
-Giới hạn request nằm trong bộ nhớ từng API instance. Nếu chạy nhiều instance hoặc sau proxy,
-cần cấu hình trusted proxy/forwarded headers và giới hạn tập trung tại gateway.
-Các API công ty/tin tuyển dụng cũ chưa được gắn quyền nhà tuyển dụng trong thay đổi này.
+Call register/login, copy `accessToken`, then use Swagger Authorize with the Bearer scheme to call `/me` and profile endpoints. Refresh and logout take the refresh token in their JSON body.
 
 ```powershell
-dotnet test tests/JobTot.Domain.Tests/JobTot.Domain.Tests.csproj
+dotnet test tests/JobTot.Domain.Tests --configuration Jwt
 ```
 
-Kiểm thử HTTP dùng WebApplicationFactory với EF InMemory, không thay đổi database JobTot.
-Chúng kiểm tra cookie, CSRF, validation, tài khoản trùng, đăng nhập, vai trò/trạng thái,
-ghi nhớ đăng nhập, đăng xuất và rate limiting. Kiểm thử model SQL Server xác nhận unique index;
-InMemory không kiểm chứng unique constraint hay transaction thực tế của SQL Server.
+HTTP tests use EF InMemory and cover issuance, validation, rotation, replay, logout, account changes, expiry, rate limiting and private profile/CV access. InMemory tests do not prove SQL Server transactions or uniqueness constraints; SQL model tests and generated migrations cover the schema.
 
-Tham khảo cơ chế framework:
-[Cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-9.0),
-[CSRF protection](https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-9.0).
+References: [ASP.NET Core JWT bearer authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-jwt-bearer-authentication?view=aspnetcore-9.0), [refresh token rotation](https://www.rfc-editor.org/rfc/rfc9700.html#section-4.14).

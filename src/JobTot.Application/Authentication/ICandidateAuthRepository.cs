@@ -8,6 +8,7 @@ public interface ICandidateAuthRepository
     Task<Account?> GetAsync(Guid id, CancellationToken ct);
     Task AddAsync(Account account, CancellationToken ct);
     Task SaveChangesAsync(CancellationToken ct);
+    Task<bool> ResetPasswordAsync(Guid id, string expectedHash, string newHash, CancellationToken ct);
 }
 
 public interface IAccountPasswordHasher
