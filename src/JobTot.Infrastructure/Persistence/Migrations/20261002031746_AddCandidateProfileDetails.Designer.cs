@@ -4,6 +4,7 @@ using JobTot.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobTot.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RecruitmentDbContext))]
-    partial class RecruitmentDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002031746_AddCandidateProfileDetails")]
+    partial class AddCandidateProfileDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -571,42 +574,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("UpdatedAccountId");
 
                     b.ToTable("CandidateProfile", (string)null);
-                });
-
-            modelBuilder.Entity("JobTot.Domain.Entities.CandidateRefreshSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("PasswordStamp")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<DateTimeOffset?>("RevokedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<Guid>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
-
-                    b.ToTable("CandidateRefreshSessions");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateSkill", b =>
@@ -1896,22 +1863,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.ToTable("TalentTag", (string)null);
                 });
 
-            modelBuilder.Entity("JobTot.Domain.Entities.UsedCandidateRefreshToken", b =>
-                {
-                    b.Property<string>("TokenHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("TokenHash");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("UsedCandidateRefreshTokens");
-                });
-
             modelBuilder.Entity("JobTot.Domain.Entities.Account", b =>
                 {
                     b.HasOne("JobTot.Domain.Entities.Account", "CreatedAccount")
@@ -2190,15 +2141,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Navigation("Province");
 
                     b.Navigation("UpdatedAccount");
-                });
-
-            modelBuilder.Entity("JobTot.Domain.Entities.CandidateRefreshSession", b =>
-                {
-                    b.HasOne("JobTot.Domain.Entities.Account", null)
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateSkill", b =>
@@ -2872,15 +2814,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Navigation("CreatedAccount");
 
                     b.Navigation("UpdatedAccount");
-                });
-
-            modelBuilder.Entity("JobTot.Domain.Entities.UsedCandidateRefreshToken", b =>
-                {
-                    b.HasOne("JobTot.Domain.Entities.CandidateRefreshSession", null)
-                        .WithMany()
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.Account", b =>

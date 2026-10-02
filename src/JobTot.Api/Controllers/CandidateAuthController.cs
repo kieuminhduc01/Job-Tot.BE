@@ -1,7 +1,5 @@
 using System.Security.Claims;
 using JobTot.Application.Authentication;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,15 +8,9 @@ namespace JobTot.Api.Controllers;
 
 [ApiController]
 [Route("api/candidate/auth")]
-[AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class CandidateAuthController(CandidateAuthService service, IAntiforgery antiforgery) : ControllerBase
+public sealed class CandidateAuthController(CandidateAuthService service, CandidateTokens tokens, PasswordRecovery recovery) : ControllerBase
 {
-    [HttpGet("csrf")]
-    [AllowAnonymous]
-    public ActionResult<CsrfTokenDto> Csrf() => Ok(new CsrfTokenDto(
-        antiforgery.GetAndStoreTokens(HttpContext).RequestToken!, CandidateAuthentication.CsrfHeader));
-
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
@@ -26,7 +18,7 @@ public sealed class CandidateAuthController(CandidateAuthService service, IAntif
     public async Task<ActionResult<CandidateSessionDto>> Register(CandidateRegisterRequest request, CancellationToken ct)
     {
         var account = await service.RegisterAsync(request, ct);
-        var session = await SignInAsync(account, rememberMe: false);
+        var session = await tokens.CreateAsync(account, rememberMe: false, ct);
         return CreatedAtAction(nameof(Me), session);
     }
 
@@ -34,7 +26,7 @@ public sealed class CandidateAuthController(CandidateAuthService service, IAntif
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
     public async Task<ActionResult<CandidateSessionDto>> Login(CandidateLoginRequest request, CancellationToken ct)
-        => Ok(await SignInAsync(await service.LoginAsync(request, ct), request.RememberMe));
+        => Ok(await tokens.CreateAsync(await service.LoginAsync(request, ct), request.RememberMe, ct));
 
     [HttpGet("me")]
     [Authorize(Policy = CandidateAuthentication.Policy)]
@@ -44,27 +36,35 @@ public sealed class CandidateAuthController(CandidateAuthService service, IAntif
         return account is null ? Unauthorized() : Ok(account);
     }
 
-    [HttpPost("logout")]
-    [Authorize(Policy = CandidateAuthentication.Policy)]
-    public async Task<IActionResult> Logout()
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken ct)
     {
-        await HttpContext.SignOutAsync(CandidateAuthentication.Scheme);
+        await recovery.RequestAsync(request.Email, ct);
+        return Ok(new { message = "Nếu email liên kết với tài khoản khả dụng, bạn sẽ nhận được hướng dẫn khôi phục mật khẩu." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct)
+    {
+        await recovery.ResetAsync(request, ct);
         return NoContent();
     }
 
-    private async Task<CandidateSessionDto> SignInAsync(CandidateAccountDto account, bool rememberMe)
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
+    public async Task<ActionResult<CandidateSessionDto>> Refresh(CandidateRefreshRequest request, CancellationToken ct)
+        => await tokens.RefreshAsync(request.RefreshToken, ct) is { } session ? Ok(session) : Unauthorized();
+
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Logout(CandidateRefreshRequest request, CancellationToken ct)
     {
-        var expiresAt = DateTimeOffset.UtcNow.Add(rememberMe ? TimeSpan.FromDays(30) : TimeSpan.FromHours(8));
-        var identity = new ClaimsIdentity(new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-            new Claim(ClaimTypes.Name, account.FullName),
-            new Claim(ClaimTypes.Role, CandidateAuthService.CandidateRole)
-        }, CandidateAuthentication.Scheme);
-        await HttpContext.SignInAsync(CandidateAuthentication.Scheme, new ClaimsPrincipal(identity),
-            new AuthenticationProperties { IsPersistent = rememberMe, ExpiresUtc = expiresAt });
-        return new CandidateSessionDto(account, expiresAt);
+        await tokens.LogoutAsync(request.RefreshToken, ct);
+        return NoContent();
     }
 }
-
-public sealed record CsrfTokenDto(string Token, string HeaderName);

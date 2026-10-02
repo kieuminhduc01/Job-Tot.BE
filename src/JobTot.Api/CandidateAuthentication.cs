@@ -1,63 +1,62 @@
 using System.Globalization;
-using System.Security.Claims;
 using System.Threading.RateLimiting;
 using JobTot.Application.Authentication;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Cryptography;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace JobTot.Api;
 
 public static class CandidateAuthentication
 {
-    public const string Scheme = "CandidateCookie";
+    public const string Scheme = "CandidateBearer";
     public const string Policy = "CandidateOnly";
     public const string RateLimitPolicy = "CandidateAuth";
-    public const string CsrfHeader = "X-CSRF-TOKEN";
 
     public static IServiceCollection AddCandidateAuthentication(this IServiceCollection services,
         IConfiguration configuration, bool development)
     {
-        services.AddAuthentication(Scheme).AddCookie(Scheme, options =>
+        var encodedKey = configuration["Jwt:SigningKey"];
+        var key = string.IsNullOrWhiteSpace(encodedKey)
+            ? development ? RandomNumberGenerator.GetBytes(32)
+                : throw new InvalidOperationException("Jwt:SigningKey must be a Base64-encoded random key of at least 32 bytes.")
+            : Convert.FromBase64String(encodedKey);
+        if (key.Length < 32) throw new InvalidOperationException("Jwt:SigningKey must contain at least 32 bytes.");
+        var settings = new CandidateJwtSettings(configuration["Jwt:Issuer"] ?? "JobTot.Api",
+            configuration["Jwt:Audience"] ?? "JobTot.Web", new SymmetricSecurityKey(key));
+        services.AddSingleton(settings);
+        services.AddScoped<CandidateTokens>();
+        services.AddDataProtection();
+        services.AddAuthentication(Scheme).AddJwtBearer(Scheme, options =>
         {
-            options.Cookie.Name = "JobTot.Candidate";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = development ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-            options.ExpireTimeSpan = TimeSpan.FromHours(8);
-            options.SlidingExpiration = false;
-            options.Events = new CookieAuthenticationEvents
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; },
-                OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; },
-                OnValidatePrincipal = async context =>
+                ValidateIssuer = true, ValidIssuer = settings.Issuer,
+                ValidateAudience = true, ValidAudience = settings.Audience,
+                ValidateIssuerSigningKey = true, IssuerSigningKey = settings.Key,
+                ValidateLifetime = true, RequireExpirationTime = true, RequireSignedTokens = true,
+                ClockSkew = TimeSpan.Zero, ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = async context =>
                 {
-                    var service = context.HttpContext.RequestServices.GetRequiredService<CandidateAuthService>();
-                    if (!Guid.TryParse(context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
-                        || await service.GetActiveAsync(id, context.HttpContext.RequestAborted) is null)
-                    {
-                        context.RejectPrincipal();
-                        await context.HttpContext.SignOutAsync(Scheme);
-                    }
+                    var tokens = context.HttpContext.RequestServices.GetRequiredService<CandidateTokens>();
+                    if (!await tokens.ValidateAsync(context.Principal!, context.HttpContext.RequestAborted))
+                        context.Fail("The login session is no longer valid.");
                 }
             };
         });
         services.AddAuthorization(options => options.AddPolicy(Policy,
             policy => policy.AddAuthenticationSchemes(Scheme).RequireAuthenticatedUser()
                 .RequireRole(CandidateAuthService.CandidateRole)));
-        services.AddAntiforgery(options =>
-        {
-            options.HeaderName = CsrfHeader;
-            options.Cookie.Name = "JobTot.Csrf";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = development ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-        });
         services.AddCors(options => options.AddPolicy("CandidateWeb", policy =>
         {
             var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
             if (origins.Length > 0)
-                policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
         }));
         services.AddRateLimiter(options =>
         {

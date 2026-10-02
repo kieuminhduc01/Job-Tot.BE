@@ -9,6 +9,14 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
     public const string CandidateRole = "Candidate";
     public const string ActiveStatus = "Active";
 
+    public async Task<string?> GetPasswordStampAsync(Guid id, CancellationToken ct)
+    {
+        var account = await repository.GetAsync(id, ct);
+        return account?.PasswordHash is { } hash
+            ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(hash)))
+            : null;
+    }
+
     public async Task<CandidateAccountDto> RegisterAsync(CandidateRegisterRequest request, CancellationToken ct)
     {
         Validate(request);
@@ -53,7 +61,7 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         return account is not null && IsActiveCandidate(account) ? ToDto(account) : null;
     }
 
-    private static bool IsActiveCandidate(Account account) =>
+    public static bool IsActiveCandidate(Account account) =>
         account.Status == EntityStatus.Active && account.AccountType == CandidateRole &&
         account.AccountStatus == ActiveStatus && account.CandidateProfile?.Status == EntityStatus.Active;
 

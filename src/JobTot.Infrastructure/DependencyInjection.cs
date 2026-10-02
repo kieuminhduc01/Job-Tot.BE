@@ -13,7 +13,9 @@ public static class DependencyInjection
         services.AddDbContext<RecruitmentDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.EnableRetryOnFailure()));
         services.AddScoped<IRecruitmentRepository, RecruitmentRepository>();
+        services.AddScoped<JobTot.Application.Companies.ICompanyDirectoryRepository, CompanyDirectoryRepository>();
         services.AddScoped<ICandidateAuthRepository, CandidateAuthRepository>();
+        services.AddScoped<JobTot.Application.Profiles.ICandidateProfileRepository, CandidateProfileRepository>();
         services.AddScoped<CandidateAuthService>();
         services.AddSingleton<IAccountPasswordHasher, AccountPasswordHasher>();
         return services;
