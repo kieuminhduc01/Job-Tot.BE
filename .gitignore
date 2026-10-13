@@ -8,3 +8,12 @@ TestResults/
 *.suo
 .env
 appsettings.Local.json
+src/JobTot.Api/wwwroot/uploads/*
+!src/JobTot.Api/wwwroot/uploads/companies/
+src/JobTot.Api/wwwroot/uploads/companies/*
+!src/JobTot.Api/wwwroot/uploads/companies/logos/
+!src/JobTot.Api/wwwroot/uploads/companies/covers/
+src/JobTot.Api/wwwroot/uploads/companies/logos/*
+src/JobTot.Api/wwwroot/uploads/companies/covers/*
+!src/JobTot.Api/wwwroot/uploads/companies/logos/*.svg
+!src/JobTot.Api/wwwroot/uploads/companies/covers/*.svg

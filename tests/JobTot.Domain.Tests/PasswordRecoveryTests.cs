@@ -76,6 +76,7 @@ public sealed class PasswordRecoveryTests
 
     private sealed class RecoveryRepository : ICandidateAuthRepository
     {
+        public Task<string?> GetAvatarUrlAsync(Guid id, CancellationToken ct) => Task.FromResult<string?>(null);
         public Account Account { get; } = new()
         {
             Email = "candidate@example.com", AccountType = "Candidate", AccountStatus = "Active",

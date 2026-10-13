@@ -4,6 +4,7 @@ namespace JobTot.Application.Companies;
 
 public sealed class CompanySearch : IValidatableObject
 {
+    public Guid? CompanyId { get; set; }
     [StringLength(200)] public string? Keyword { get; set; }
     public Guid? ProvinceId { get; set; }
     public Guid? IndustryId { get; set; }
@@ -24,7 +25,10 @@ public sealed class CompanySearch : IValidatableObject
 
 public sealed record CompanyListingDto(Guid Id, string Name, string Description, string? Industry,
     string? Province, string? Address, int? SizeMin, int? SizeMax, string? LogoUrl, string? CoverUrl,
-    bool IsVerified, int OpenJobCount, IReadOnlyList<string> HiringTitles);
+    bool IsVerified, int OpenJobCount, IReadOnlyList<string> HiringTitles)
+{
+    public EmployerCompanyBrand? Brand { get; init; }
+}
 public sealed record CompanyFilterOption(Guid Id, string Name, int Count);
 public sealed record CompanyDirectoryStats(int TotalCompanies, int VerifiedCompanies, int HiringCompanies, int OpenJobs);
 public sealed record CompanyDirectoryMetadata(CompanyDirectoryStats Stats,

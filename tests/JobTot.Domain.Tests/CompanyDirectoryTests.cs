@@ -18,6 +18,71 @@ namespace JobTot.Domain.Tests;
 
 public sealed class CompanyDirectoryTests
 {
+    [Theory]
+    [InlineData("logos/716c5ddc21e45b469d1285e1e229db31.svg")]
+    [InlineData("covers/2b6cdefba63f5c4e82af354ea34161b2.svg")]
+    public async Task DemoCompanySvgIsServedByBackend(string filename)
+    {
+        await using var factory = new DirectoryFactory();
+        using var client = factory.CreateClient();
+        using var response = await client.GetAsync($"/uploads/companies/{filename}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/svg+xml", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("<svg", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task EmptyDirectoryMetadataHasZeroCounts()
+    {
+        await using var factory = new DirectoryFactory();
+        using var client = factory.CreateClient();
+        var metadata = (await client.GetFromJsonAsync<CompanyDirectoryMetadata>("/api/companies/filters"))!;
+        Assert.Equal(new CompanyDirectoryStats(0, 0, 0, 0), metadata.Stats);
+        Assert.Empty(metadata.Provinces);
+        Assert.Empty(metadata.Industries);
+    }
+
+    [Fact]
+    public async Task MetadataPreservesCancellationInsteadOfReturningEmptyData()
+    {
+        await using var factory = new DirectoryFactory();
+        using var scope = factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<ICompanyDirectoryRepository>();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => repository.MetadataAsync(cancellation.Token));
+    }
+
+    [Fact]
+    public async Task IndustryOverviewDeduplicatesMembershipsAndExcludesClosedExpiredInactiveAndHourlySalaries()
+    {
+        await using var factory = new DirectoryFactory();
+        using var client = factory.CreateClient();
+        await factory.Seed();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecruitmentDbContext>();
+            db.CompanyIndustryRecords.Add(new CompanyIndustry { CompanyId = factory.Acme.Id, IndustryId = factory.Tech.Id });
+            db.Jobs.Add(new JobPost(factory.Acme.Id, "Monthly", "Description", "Ha Noi", 12000000, 35000000, DateTimeOffset.UtcNow.AddDays(5)));
+            var hourly = new JobPost(factory.Acme.Id, "Hourly", "Description", "Ha Noi", 50000, 100000, DateTimeOffset.UtcNow.AddDays(5));
+            hourly.SetDirectoryDetails(null, null, null, "hourly");
+            db.Jobs.Add(hourly);
+            var hidden = await db.Companies.SingleAsync(c => c.Status == EntityStatus.Deleted);
+            hidden.IndustryId = factory.Tech.Id;
+            db.Jobs.Add(new JobPost(hidden.Id, "Hidden", "Description", "Ha Noi", 1000000, 99000000, DateTimeOffset.UtcNow.AddDays(5)));
+            await db.SaveChangesAsync();
+        }
+        var items = (await client.GetFromJsonAsync<System.Text.Json.JsonElement[]>("/api/industries/overview"))!;
+        var tech = items.Single(i => i.GetProperty("id").GetGuid() == factory.Tech.Id);
+        Assert.Equal(3, tech.GetProperty("openJobs").GetInt32());
+        Assert.Equal(3, tech.GetProperty("newJobs").GetInt32());
+        Assert.Equal(12000000, tech.GetProperty("salaryMin").GetDecimal());
+        Assert.Equal(35000000, tech.GetProperty("salaryMax").GetDecimal());
+        var finance = items.Single(i => i.GetProperty("id").GetGuid() == factory.Finance.Id);
+        Assert.Equal(0, finance.GetProperty("openJobs").GetInt32());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, finance.GetProperty("salaryMin").ValueKind);
+    }
+
     [Fact]
     public async Task PublicDirectoryFiltersSortsAndCountsOnlyActiveCompaniesAndOpenJobs()
     {
@@ -40,6 +105,11 @@ public sealed class CompanyDirectoryTests
         var page = (await client.GetFromJsonAsync<PageResult<CompanyListingDto>>("/api/companies?sort=name&pageSize=1&page=2"))!;
         Assert.Equal(2, page.TotalCount);
         Assert.Equal("Beta Bank", Assert.Single(page.Items).Name);
+        var detail = (await client.GetFromJsonAsync<PageResult<CompanyListingDto>>($"/api/companies?companyId={factory.Acme.Id}&pageSize=1"))!;
+        Assert.Equal(1, detail.TotalCount);
+        Assert.Equal(factory.Acme.Id, Assert.Single(detail.Items).Id);
+        var missing = (await client.GetFromJsonAsync<PageResult<CompanyListingDto>>($"/api/companies?companyId={Guid.NewGuid()}"))!;
+        Assert.Empty(missing.Items);
     }
 
     [Fact]

@@ -1,10 +1,13 @@
 # Company directory development data
 
+Apply the current EF migrations before running seeds (`dotnet ef database update --project src/JobTot.Infrastructure --startup-project src/JobTot.Api`).
+For the candidate job-detail page, `seed-job-candidate-details.sql` fills missing requirements and sample hiring steps on the original demo jobs only; see [job-detail documentation](../docs/job-detail.md).
+
 `seed-company-directory.sql` inserts 100 fictional companies and 500 Jobs records (five per company), with 10 industries, all 34 official provincial units, salary ranges, descriptions, employee sizes, and related Media records.
 
 Company names contain `(Demo)`, their descriptions identify them as fictional, and job descriptions explicitly state they are not real vacancies. Emails use `example.invalid`. `VerificationStatus = Verified` on 80 demo companies is simulated to exercise the UI, not a claim about actual verification.
 
-Logo and cover SVG assets are in `FE/public/images/demo-companies`. Their Media URLs are relative frontend URLs, so they work without an external image service. Job expiration is 60–89 days after the initial insertion.
+Logo and cover SVG assets are in `BE/JobTot/src/JobTot.Api/wwwroot/uploads/companies`. The backend serves their existing Media URLs at `/uploads/companies/...`; Vite proxies that path in development and the frontend uses `VITE_API_BASE_URL` for separate-origin deployments. Job expiration is 60–89 days after the initial insertion.
 
 From `BE/JobTot`:
 
@@ -30,4 +33,4 @@ To regenerate the SQL and SVG fixtures from their source (Python standard librar
 python scripts/generate-company-directory-seed.py
 ```
 
-View the data at `/companies`; company job buttons fetch the corresponding records from `/api/jobs?companyId={id}`. The current `/jobs` page still uses its pre-existing frontend sample collection; this seed does not change that page's data source.
+View the data at `/companies` and `/jobs`; both pages fetch real records from `/api/jobs`. After applying `AddJobDirectoryDetails`, run `seed-job-directory-details.sql` to fill missing experience, position, employment type and benefit fields on these original demo jobs. It only targets their deterministic IDs and demo descriptions, preserves existing edits and does not change salaries or expiration dates. See [job directory API](../docs/job-directory.md).

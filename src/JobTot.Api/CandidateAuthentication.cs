@@ -44,8 +44,17 @@ public static class CandidateAuthentication
                 OnTokenValidated = async context =>
                 {
                     var tokens = context.HttpContext.RequestServices.GetRequiredService<CandidateTokens>();
-                    if (!await tokens.ValidateAsync(context.Principal!, context.HttpContext.RequestAborted))
-                        context.Fail("The login session is no longer valid.");
+                    try
+                    {
+                        if (context.HttpContext.RequestAborted.IsCancellationRequested) { context.NoResult(); return; }
+                        if (!await tokens.ValidateAsync(context.Principal!, context.HttpContext.RequestAborted))
+                            context.Fail("The login session is no longer valid.");
+                    }
+                    catch (Exception exception) when (RequestCancellation.IsClientCancellation(exception, context.HttpContext.RequestAborted))
+                    {
+                        // Handle inside the JWT event, before JwtBearer logs/rethrows an authentication failure.
+                        context.NoResult();
+                    }
                 }
             };
         });

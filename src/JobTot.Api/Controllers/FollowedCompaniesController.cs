@@ -13,17 +13,56 @@ public sealed class FollowedCompaniesController(ICompanyDirectoryRepository dire
 {
     private Guid AccountId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Guid>>> List(CancellationToken ct) => Ok(await directory.FollowedAsync(AccountId, ct));
+    public async Task<ActionResult<IReadOnlyList<Guid>>> List(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await directory.FollowedAsync(AccountId, ct));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.List");
+            throw;
+        }
+    }
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Follow(Guid id, CancellationToken ct)
     {
-        await directory.SetFollowedAsync(AccountId, id, true, ct);
-        return NoContent();
+        try
+        {
+            await directory.SetFollowedAsync(AccountId, id, true, ct);
+            return NoContent();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.Follow");
+            throw;
+        }
     }
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Unfollow(Guid id, CancellationToken ct)
     {
-        await directory.SetFollowedAsync(AccountId, id, false, ct);
-        return NoContent();
+        try
+        {
+            await directory.SetFollowedAsync(AccountId, id, false, ct);
+            return NoContent();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.Unfollow");
+            throw;
+        }
     }
 }

@@ -11,67 +11,166 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
 
     public async Task<string?> GetPasswordStampAsync(Guid id, CancellationToken ct)
     {
-        var account = await repository.GetAsync(id, ct);
-        return account?.PasswordHash is { } hash
-            ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(hash)))
-            : null;
+        try
+        {
+            var account = await repository.GetAsync(id, ct);
+            return account?.PasswordHash is { } hash ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(hash))) : null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.GetPasswordStampAsync");
+            throw;
+        }
     }
 
     public async Task<CandidateAccountDto> RegisterAsync(CandidateRegisterRequest request, CancellationToken ct)
     {
-        Validate(request);
-        var identifier = CandidateIdentifier.Parse(request.EmailOrPhone);
-        if (await repository.FindAsync(identifier, ct) is not null)
-            throw new DuplicateAccountException();
-
-        var account = new Account
+        try
         {
-            FullName = request.FullName.Trim(), Email = identifier.Email, Phone = identifier.Phone,
-            AccountType = CandidateRole, AccountStatus = ActiveStatus
-        };
-        account.PasswordHash = passwords.Hash(account, request.Password);
-        account.CandidateProfile = new CandidateProfile { AccountId = account.Id, Account = account };
-        await repository.AddAsync(account, ct);
-        return ToDto(account);
+            Validate(request);
+            var identifier = CandidateIdentifier.Parse(request.EmailOrPhone);
+            if (await repository.FindAsync(identifier, ct) is not null)
+                throw new DuplicateAccountException();
+            var account = new Account
+            {
+                FullName = request.FullName.Trim(),
+                Email = identifier.Email,
+                EmailVerifiedAt = identifier.Email != null ? DateTimeOffset.UtcNow : null,
+                Phone = identifier.Phone,
+                AccountType = CandidateRole,
+                AccountStatus = ActiveStatus
+            };
+            account.PasswordHash = passwords.Hash(account, request.Password);
+            account.CandidateProfile = new CandidateProfile
+            {
+                AccountId = account.Id,
+                Account = account
+            };
+            await repository.AddAsync(account, ct);
+            return ToDto(account);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.RegisterAsync");
+            throw;
+        }
     }
 
-    public async Task<CandidateAccountDto> LoginAsync(CandidateLoginRequest request, CancellationToken ct)
+    public async Task<CandidateAccountDto?> LoginAsync(CandidateLoginRequest request, CancellationToken ct)
     {
-        Validate(request);
-        CandidateIdentifier identifier;
-        try { identifier = CandidateIdentifier.Parse(request.EmailOrPhone); }
-        catch (ArgumentException) { throw new InvalidCredentialsException(); }
-        var account = await repository.FindAsync(identifier, ct);
-        // The password implementation also performs a hash verification for unknown accounts.
-        var validPassword = passwords.Verify(account ?? new Account(), request.Password, out var rehash);
-        if (!validPassword || account is null || !IsActiveCandidate(account))
-            throw new InvalidCredentialsException();
-
-        if (rehash)
+        try
         {
-            account.PasswordHash = passwords.Hash(account, request.Password);
-            await repository.SaveChangesAsync(ct);
+            Validate(request);
+            if (!CandidateIdentifier.TryParse(request.EmailOrPhone, out var identifier))
+                return null;
+            var account = await repository.FindAsync(identifier!, ct);
+            // The password implementation also performs a hash verification for unknown accounts.
+            var validPassword = passwords.Verify(account ?? new Account(), request.Password, out var rehash);
+            if (!validPassword || account is null || !IsActiveCandidate(account))
+                return null;
+            if (rehash)
+            {
+                account.PasswordHash = passwords.Hash(account, request.Password);
+                await repository.SaveChangesAsync(ct);
+            }
+
+            return ToDto(account);
         }
-        return ToDto(account);
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.LoginAsync");
+            throw;
+        }
     }
 
     public async Task<CandidateAccountDto?> GetActiveAsync(Guid id, CancellationToken ct)
     {
-        var account = await repository.GetAsync(id, ct);
-        return account is not null && IsActiveCandidate(account) ? ToDto(account) : null;
+        try
+        {
+            var account = await repository.GetAsync(id, ct);
+            return account is not null && IsActiveCandidate(account) ? ToDto(account) with
+            {
+                AvatarUrl = await repository.GetAvatarUrlAsync(id, ct)
+            }
+
+            : null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.GetActiveAsync");
+            throw;
+        }
     }
 
-    public static bool IsActiveCandidate(Account account) =>
-        account.Status == EntityStatus.Active && account.AccountType == CandidateRole &&
-        account.AccountStatus == ActiveStatus && account.CandidateProfile?.Status == EntityStatus.Active;
+    public static bool IsActiveCandidate(Account account)
+    {
+        try
+        {
+            return account.Status == EntityStatus.Active && account.AccountType == CandidateRole && account.AccountStatus == ActiveStatus && account.CandidateProfile?.Status == EntityStatus.Active;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.IsActiveCandidate");
+            throw;
+        }
+    }
 
-    private static CandidateAccountDto ToDto(Account account) => new(account.Id,
-        account.CandidateProfile!.Id, account.FullName, account.Email, account.Phone, CandidateRole);
+    private static CandidateAccountDto ToDto(Account account)
+    {
+        try
+        {
+            return new(account.Id, account.CandidateProfile!.Id, account.FullName, account.Email, account.Phone, CandidateRole)
+            {
+                AvatarUrl = account.CandidateProfile.DetailsJson is { } details ? System.Text.Json.JsonSerializer.Deserialize<JobTot.Application.Profiles.CandidateProfileDocument>(details)?.AvatarUrl : null
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.ToDto");
+            throw;
+        }
+    }
 
     private static void Validate(object request)
     {
-        var errors = new List<ValidationResult>();
-        if (!Validator.TryValidateObject(request, new ValidationContext(request), errors, true))
-            throw new ArgumentException(string.Join(" ", errors.Select(x => x.ErrorMessage)));
+        try
+        {
+            var errors = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(request, new ValidationContext(request), errors, true))
+                throw new ArgumentException(string.Join(" ", errors.Select(x => x.ErrorMessage)));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.Validate");
+            throw;
+        }
     }
 }

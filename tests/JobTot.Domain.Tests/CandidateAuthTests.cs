@@ -23,6 +23,49 @@ namespace JobTot.Domain.Tests;
 public sealed class CandidateAuthTests
 {
     [Theory]
+    [InlineData("missing@example.com")]
+    [InlineData("invalid-identifier")]
+    [InlineData("registered@example.com")]
+    public async Task InvalidLoginReturnsFeedbackWithoutThrowing(string identifier)
+    {
+        await using var factory = new AuthFactory();
+        using var client = factory.CreateClient();
+        if (identifier == "registered@example.com")
+            Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/api/candidate/auth/register", Register(identifier))).StatusCode);
+        var request = new CandidateLoginRequest { EmailOrPhone = identifier, Password = "wrong123" };
+        using (var scope = factory.Services.CreateScope())
+            Assert.Null(await scope.ServiceProvider.GetRequiredService<CandidateAuthService>().LoginAsync(request, CancellationToken.None));
+        var response = await client.PostAsJsonAsync("/api/candidate/auth/login", request);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var problem = (await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!;
+        Assert.Equal(401, problem.Status);
+        Assert.Contains("Email", problem.Detail);
+        Assert.False(problem.Extensions.ContainsKey("accessToken"));
+    }
+
+    [Fact]
+    public async Task CompanySearchFiltersBeforeCountingAndPaging()
+    {
+        await using var factory = new AuthFactory();
+        using var client = factory.CreateClient();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecruitmentDbContext>();
+            db.Companies.AddRange(new Company("Alpha One", "Demo"),
+                new Company("Alpha Two", "Demo"), new Company("Beta", "Demo"));
+            await db.SaveChangesAsync();
+        }
+        var result = (await client.GetFromJsonAsync<JobTot.Application.PageResult<JobTot.Application.CompanyDto>>(
+            "/api/companies?keyword=%20Alpha%20&page=2&pageSize=1"))!;
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal("Alpha Two", Assert.Single(result.Items).Name);
+        var empty = (await client.GetFromJsonAsync<JobTot.Application.PageResult<JobTot.Application.CompanyDto>>(
+            "/api/companies?keyword=Missing"))!;
+        Assert.Empty(empty.Items);
+        Assert.Equal(0, empty.TotalCount);
+    }
+
+    [Theory]
     [InlineData(" Test@Example.com ", "test@example.com", null)]
     [InlineData("0912 345 678", null, "+84912345678")]
     [InlineData("+84 912 345 678", null, "+84912345678")]

@@ -4,6 +4,7 @@ namespace JobTot.Application.Authentication;
 
 public sealed class CandidateRegisterRequest
 {
+    [StringLength(5000)] public string? EmailVerificationToken { get; init; }
     [Required, StringLength(200)]
     public string FullName { get; init; } = string.Empty;
 
@@ -29,7 +30,10 @@ public sealed class CandidateLoginRequest
 }
 
 public sealed record CandidateAccountDto(Guid Id, Guid CandidateProfileId, string FullName,
-    string? Email, string? Phone, string AccountType);
+    string? Email, string? Phone, string AccountType)
+{
+    public string? AvatarUrl { get; init; }
+}
 
 public sealed record CandidateSessionDto(CandidateAccountDto Account, string AccessToken, string RefreshToken,
     DateTimeOffset ExpiresAt, DateTimeOffset RefreshExpiresAt);

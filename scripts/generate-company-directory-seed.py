@@ -1,5 +1,5 @@
 from pathlib import Path
-from uuid import UUID, uuid5
+from uuid import UUID, uuid5, NAMESPACE_URL
 from html import escape
 import json
 
@@ -28,23 +28,31 @@ industries = [
 ]
 brands = ['Bình Minh', 'Hải Đăng', 'Sao Mai', 'Thanh Hà', 'An Phú', 'Vạn An', 'Thiên Hà', 'Minh Sơn', 'Tân Việt', 'Đông Phong']
 palettes = [('#1675b9', '#daf1ff'), ('#1b9373', '#e4f8ef'), ('#fa6533', '#fff0e4'), ('#4b7c8d', '#e5f3f5'), ('#c78333', '#fcf0dc'), ('#8554bd', '#f0e8fc'), ('#168b96', '#ddf5f4'), ('#bc657d', '#fce9ef'), ('#667644', '#f0f3dd'), ('#7462cc', '#ede9ff')]
-assets = ROOT / 'FE/public/images/demo-companies'
+assets = ROOT / 'BE/JobTot/src/JobTot.Api/wwwroot/uploads/companies'
+def asset_path(name):
+    folder = 'logos' if name.startswith('logo-') else 'covers'
+    path = assets / folder / (uuid5(NAMESPACE_URL, 'jobtot:company-image:' + name).hex + '.svg')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+def asset_url(name):
+    return '/uploads/companies/' + asset_path(name).relative_to(assets).as_posix()
 assets.mkdir(parents=True, exist_ok=True)
 
 for index, (name, _, _) in enumerate(industries):
     color, pale = palettes[index]
     windows = ''.join(f'<rect x="{x}" y="{y}" width="14" height="22" rx="2" fill="{pale}" opacity=".9"/>' for x in range(140, 430, 28) for y in [65, 100, 135])
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300"><rect width="640" height="300" fill="{pale}"/><circle cx="565" cy="55" r="105" fill="{color}" opacity=".06"/><path d="M0 260 Q180 185 330 240 T640 225 V300 H0" fill="{color}" opacity=".12"/><rect x="120" y="42" width="338" height="166" rx="8" fill="{color}" opacity=".72"/>{windows}<rect x="470" y="109" width="105" height="99" rx="7" fill="{color}" opacity=".3"/><path d="M80 211H588" stroke="{color}" stroke-width="4" opacity=".4"/><circle cx="79" cy="166" r="28" fill="{color}" opacity=".3"/><path d="M79 179V214" stroke="{color}" stroke-width="6" opacity=".4"/><text x="28" y="270" font-family="Arial,sans-serif" font-size="20" fill="{color}">{escape(name)}</text><text x="555" y="277" font-family="Arial,sans-serif" font-size="12" fill="{color}">DEMO</text></svg>'''
-    (assets / f'cover-{index+1:02}.svg').write_text(svg, encoding='utf-8')
+    asset_path(f'cover-{index+1:02}.svg').write_text(svg, encoding='utf-8')
 
 industry_rows = []
 province_rows = []
 media_rows = []
 company_rows = []
 job_rows = []
+job_detail_rows = []
 for index, (name, _, _) in enumerate(industries):
     industry_rows.append(f"({index}, '{uid(f'industry:{index}')}', {quote(name)})")
-    media_rows.append(f"('{uid(f'cover:{index}')}', N'/images/demo-companies/cover-{index+1:02}.svg', N'CompanyCover')")
+    media_rows.append(f"('{uid(f'cover:{index}')}', N'{asset_url(f'cover-{index+1:02}.svg')}', N'CompanyCover')")
 for index, (code, name, _) in enumerate(provinces):
     legacy = province_records[index].get('legacyCode')
     short_name = name.removeprefix('Thành phố ').removeprefix('Tỉnh ')
@@ -62,8 +70,8 @@ for index in range(100):
     logo_id = uid(f'logo:{index+1}')
     color, pale = palettes[sector]
     initials = ''.join(word[0] for word in brand.split()).upper()
-    (assets / f'logo-{index+1:03}.svg').write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="22" fill="{pale}"/><text x="60" y="70" text-anchor="middle" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="{color}">{initials}</text><text x="60" y="99" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" letter-spacing="2" fill="{color}">DEMO {index+1:03}</text></svg>', encoding='utf-8')
-    media_rows.append(f"('{logo_id}', N'/images/demo-companies/logo-{index+1:03}.svg', N'CompanyLogo')")
+    asset_path(f'logo-{index+1:03}.svg').write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="22" fill="{pale}"/><text x="60" y="70" text-anchor="middle" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="{color}">{initials}</text><text x="60" y="99" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" letter-spacing="2" fill="{color}">DEMO {index+1:03}</text></svg>', encoding='utf-8')
+    media_rows.append(f"('{logo_id}', N'{asset_url(f'logo-{index+1:03}.svg')}', N'CompanyLogo')")
     size_min, size_max = [(15, 45), (60, 180), (220, 450), (550, 950), (1200, 3500)][(index // 2) % 5]
     description = f'Dữ liệu minh họa phục vụ phát triển và kiểm thử Job Tốt. {company_name} là doanh nghiệp giả lập trong lĩnh vực {sector_name.lower()}, có trụ sở tại {province}. Không phải thông tin tuyển dụng thực tế.'
     culture = 'Môi trường hợp tác, đào tạo chuyên môn, đánh giá năng lực định kỳ và hỗ trợ phát triển sự nghiệp. Toàn bộ thông tin là dữ liệu demo.'
@@ -97,6 +105,9 @@ QUYỀN LỢI MINH HỌA
 
 Đây là dữ liệu thử nghiệm. Không gửi hồ sơ hoặc thông tin cá nhân đến địa chỉ demo.'''
         job_rows.append(f"('{job_id}', '{company_id}', {quote(role)}, {quote(job_description)}, {quote(province)}, {salary_min}, {salary_max}, {index % 14 + role_index}, {60 + index % 30})")
+        employment = 'flexible' if sector in [0, 2, 9] and role_index % 2 == 0 else 'full-time'
+        position = 'manager' if 'Quản lý' in role else 'employee'
+        job_detail_rows.append(f"('{job_id}', N'1-3', {quote(position)}, {quote(employment)})")
 
 join_rows = lambda rows: ',\n    '.join(rows)
 province_sql = f'''    -- Official 34-province catalog; preserve existing IDs referenced by company/profile/campaign records.
@@ -195,9 +206,12 @@ BEGIN TRY
         Location nvarchar(200), SalaryMin decimal(18,2), SalaryMax decimal(18,2), AgeDays int, ExpiryDays int);
     INSERT @Jobs VALUES
     {join_rows(job_rows)};
-    INSERT dbo.Jobs (Id, CompanyId, Title, Description, Location, SalaryMin, SalaryMax, CreatedAt, ExpiresAt, IsClosed)
-    SELECT Id, CompanyId, Title, Description, Location, SalaryMin, SalaryMax, DATEADD(day, -AgeDays, @Now), DATEADD(day, ExpiryDays, @Now), 0
-    FROM @Jobs seed WHERE NOT EXISTS (SELECT 1 FROM dbo.Jobs actual WHERE actual.Id = seed.Id);
+    INSERT dbo.Jobs (Id, CompanyId, Title, Description, Location, ProvinceId, SalaryMin, SalaryMax, CreatedAt, ExpiresAt, IsClosed)
+    SELECT seed.Id, CompanyId, Title, Description, Location, province.Id, SalaryMin, SalaryMax, DATEADD(day, -AgeDays, @Now), DATEADD(day, ExpiryDays, @Now), 0
+    FROM @Jobs seed LEFT JOIN @Provinces province ON province.Name = seed.Location
+        OR province.Name = N'Thành phố ' + seed.Location OR province.Name = N'Tỉnh ' + seed.Location
+        OR (seed.Location LIKE N'TP. %' AND province.Name = N'Thành phố ' + SUBSTRING(seed.Location, 5, 200))
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.Jobs actual WHERE actual.Id = seed.Id);
     SET @AddedJobs = @@ROWCOUNT;
 
     IF (SELECT COUNT(*) FROM dbo.Companies c JOIN @Companies s ON c.Id = s.Id) <> 100 THROW 51002, 'Expected 100 seeded companies.', 1;
@@ -215,4 +229,66 @@ BEGIN CATCH
 END CATCH;
 '''
 (ROOT / 'BE/JobTot/scripts/seed-company-directory.sql').write_text(sql, encoding='utf-8')
+details_sql = f'''-- Enrich only the original deterministic JobTot demo jobs with missing directory fields.
+-- Requires AddJobDirectoryDetails. Does not overwrite existing details or change salaries, dates or descriptions.
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+IF DB_NAME() <> N'JobTot' THROW 51000, 'This seed is intended for the JobTot database.', 1;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @Details TABLE (Id uniqueidentifier PRIMARY KEY, ExperienceLevel nvarchar(20), PositionLevel nvarchar(20), EmploymentType nvarchar(20));
+    INSERT @Details VALUES
+    {join_rows(job_detail_rows)};
+    UPDATE job SET ExperienceLevel = seed.ExperienceLevel, PositionLevel = seed.PositionLevel,
+        EmploymentType = seed.EmploymentType, WorkSchedule = N'Giờ hành chính',
+        Benefits = N'Bảo hiểm theo quy định|Đào tạo nội bộ'
+    FROM dbo.Jobs job JOIN @Details seed ON seed.Id = job.Id
+    JOIN dbo.Companies company ON company.Id = job.CompanyId
+    WHERE company.DisplayName LIKE N'%(Demo)' AND job.Description LIKE N'VỊ TRÍ DEMO%'
+        AND job.ExperienceLevel IS NULL AND job.PositionLevel IS NULL AND job.EmploymentType IS NULL
+        AND job.WorkSchedule IS NULL AND job.Benefits IS NULL;
+    DECLARE @UpdatedJobs int = @@ROWCOUNT;
+    COMMIT TRANSACTION;
+    SELECT @UpdatedJobs AS EnrichedDemoJobs;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+'''
+(ROOT / 'BE/JobTot/scripts/seed-job-directory-details.sql').write_text(details_sql, encoding='utf-8')
+candidate_details_sql = f'''-- Optional candidate-detail fixture for the original fictional demo jobs only.
+-- Requires AddCandidateJobDetailsAndSubmissions. Fills empty fields without changing existing descriptions.
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+IF DB_NAME() <> N'JobTot' THROW 51000, 'This seed is intended for the JobTot database.', 1;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @Demo TABLE (Id uniqueidentifier PRIMARY KEY, ExperienceLevel nvarchar(20), PositionLevel nvarchar(20), EmploymentType nvarchar(20));
+    INSERT @Demo VALUES
+    {join_rows(job_detail_rows)};
+    UPDATE job SET Requirements = COALESCE(job.Requirements,
+        SUBSTRING(job.Description, CHARINDEX(N'YÊU CẦU', job.Description) + LEN(N'YÊU CẦU'),
+            CHARINDEX(N'QUYỀN LỢI MINH HỌA', job.Description) - CHARINDEX(N'YÊU CẦU', job.Description) - LEN(N'YÊU CẦU'))),
+        HiringProcess = COALESCE(job.HiringProcess, N'Sàng lọc hồ sơ (Demo)|Đánh giá CV và kinh nghiệm phù hợp.' + CHAR(10)
+            + N'Trao đổi với bộ phận tuyển dụng (Demo)|Tìm hiểu định hướng nghề nghiệp và mong muốn của ứng viên.' + CHAR(10)
+            + N'Phỏng vấn chuyên môn (Demo)|Trao đổi về kinh nghiệm, kỹ năng và công việc thực tế.' + CHAR(10)
+            + N'Trao đổi với quản lý (Demo)|Thảo luận mục tiêu và cách phối hợp trong đội ngũ.' + CHAR(10)
+            + N'Thông báo kết quả (Demo)|Trao đổi về đề nghị công việc nếu phù hợp.'),
+        Vacancies = COALESCE(job.Vacancies, 2)
+    FROM dbo.Jobs job JOIN @Demo seed ON seed.Id = job.Id JOIN dbo.Companies company ON company.Id = job.CompanyId
+    WHERE company.DisplayName LIKE N'%(Demo)' AND job.Description LIKE N'VỊ TRÍ DEMO%'
+        AND CHARINDEX(N'YÊU CẦU', job.Description) > 0
+        AND CHARINDEX(N'QUYỀN LỢI MINH HỌA', job.Description) > CHARINDEX(N'YÊU CẦU', job.Description)
+        AND (job.Requirements IS NULL OR job.HiringProcess IS NULL OR job.Vacancies IS NULL);
+    DECLARE @UpdatedJobs int = @@ROWCOUNT;
+    COMMIT TRANSACTION;
+    SELECT @UpdatedJobs AS EnrichedDemoCandidateDetails;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+'''
+(ROOT / 'BE/JobTot/scripts/seed-job-candidate-details.sql').write_text(candidate_details_sql, encoding='utf-8')
 print(f'Generated 100 companies, 500 jobs, 10 industries, 34 official provinces, 110 media records; SQL file: {len(sql):,} characters.')

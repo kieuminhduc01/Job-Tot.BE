@@ -92,6 +92,67 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.ToTable("Account", (string)null);
                 });
 
+            modelBuilder.Entity("JobTot.Domain.Entities.AccountEmailChallenge", b =>
+                {
+                    b.Property<string>("PasswordStamp")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("ConsumedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SecretHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("Email", "Role", "Purpose", "CreatedAt");
+
+                    b.ToTable("AccountEmailChallenges");
+                });
+
             modelBuilder.Entity("JobTot.Domain.Entities.ApplicationStageHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -462,12 +523,19 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CvTemplateId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("DocumentVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("FileUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
+
+                    b.Property<string>("OnlineDocumentJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
@@ -498,6 +566,67 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("UpdatedAccountId");
 
                     b.ToTable("CandidateCv", (string)null);
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.CandidateJobSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("AppliedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CoverLetter")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("CvContentJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CvId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CvTitle")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("CvId");
+
+                    b.HasIndex("JobId", "CandidateId")
+                        .IsUnique();
+
+                    b.ToTable("CandidateJobSubmissions");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateProfile", b =>
@@ -609,6 +738,31 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.ToTable("CandidateRefreshSessions");
                 });
 
+            modelBuilder.Entity("JobTot.Domain.Entities.CandidateSavedJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("SavedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("CandidateId", "JobId")
+                        .IsUnique();
+
+                    b.ToTable("CandidateSavedJobs");
+                });
+
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateSkill", b =>
                 {
                     b.Property<Guid>("Id")
@@ -655,6 +809,64 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("CandidateSkill", (string)null);
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.CareerArticle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CoverContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CoverFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long?>("CoverSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("Published")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Published", "UpdatedAt");
+
+                    b.ToTable("CareerArticles");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.Company", b =>
@@ -914,6 +1126,14 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("DesignJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -922,6 +1142,11 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Property<string>("PreviewUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("PublicationState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
@@ -934,6 +1159,10 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("UpdatedDate")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -943,6 +1172,36 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("UpdatedAccountId");
 
                     b.ToTable("CvTemplate", (string)null);
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.EmployerCandidateInterest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("InterestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("InterestedByRecruiterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("InterestedByRecruiterId");
+
+                    b.HasIndex("CompanyId", "CandidateId")
+                        .IsUnique();
+
+                    b.ToTable("EmployerCandidateInterests", (string)null);
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.EmploymentType", b =>
@@ -1318,6 +1577,14 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AgeRequirement")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Benefits")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1329,8 +1596,24 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .HasMaxLength(10000)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("EmploymentType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ExperienceLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("GenderRequirement")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HiringProcess")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<bool>("IsClosed")
                         .HasColumnType("bit");
@@ -1339,6 +1622,29 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PositionLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("ProvinceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RecruiterEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("RecruiterName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RecruiterTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Requirements")
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -1353,8 +1659,26 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("SalaryNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SalaryPeriod")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("monthly");
+
                     b.Property<string>("Title")
                         .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("Vacancies")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkSchedule")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -1365,6 +1689,8 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("IsClosed", "ExpiresAt");
+
+                    b.HasIndex("ProvinceId", "IsClosed", "ExpiresAt");
 
                     b.ToTable("Jobs", null, t =>
                         {
@@ -1912,6 +2238,123 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.ToTable("UsedCandidateRefreshTokens");
                 });
 
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.AccountMessageRead", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("ReadAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("AccountId", "MessageId");
+
+                    b.HasIndex("MessageId");
+
+                    b.ToTable("AccountMessageReads");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.AccountNotificationRead", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NotificationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("ReadAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("AccountId", "NotificationId");
+
+                    b.ToTable("AccountNotificationReads");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.ChatConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("FirstAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PairKey")
+                        .IsRequired()
+                        .HasMaxLength(73)
+                        .HasColumnType("nvarchar(73)");
+
+                    b.Property<Guid>("SecondAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FirstAccountId");
+
+                    b.HasIndex("PairKey")
+                        .IsUnique();
+
+                    b.HasIndex("SecondAccountId");
+
+                    b.ToTable("ChatConversations");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("ClientMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("SentAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "Id");
+
+                    b.HasIndex("SenderAccountId", "ClientMessageId")
+                        .IsUnique();
+
+                    b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.DemoDataset", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("DemoDatasets", (string)null);
+                });
+
             modelBuilder.Entity("JobTot.Domain.Entities.Account", b =>
                 {
                     b.HasOne("JobTot.Domain.Entities.Account", "CreatedAccount")
@@ -1927,6 +2370,14 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Navigation("CreatedAccount");
 
                     b.Navigation("UpdatedAccount");
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.AccountEmailChallenge", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.ApplicationStageHistory", b =>
@@ -2160,6 +2611,33 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Navigation("UpdatedAccount");
                 });
 
+            modelBuilder.Entity("JobTot.Domain.Entities.CandidateJobSubmission", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.CandidateProfile", "Candidate")
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.CandidateCv", "Cv")
+                        .WithMany()
+                        .HasForeignKey("CvId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.JobPost", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Cv");
+
+                    b.Navigation("Job");
+                });
+
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateProfile", b =>
                 {
                     b.HasOne("JobTot.Domain.Entities.Account", "Account")
@@ -2199,6 +2677,25 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.CandidateSavedJob", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.CandidateProfile", "Candidate")
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.JobPost", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Job");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.CandidateSkill", b =>
@@ -2385,6 +2882,33 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.Navigation("CreatedAccount");
 
                     b.Navigation("UpdatedAccount");
+                });
+
+            modelBuilder.Entity("JobTot.Domain.Entities.EmployerCandidateInterest", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.CandidateProfile", "Candidate")
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.RecruiterProfile", "InterestedByRecruiter")
+                        .WithMany()
+                        .HasForeignKey("InterestedByRecruiterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("InterestedByRecruiter");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.EmploymentType", b =>
@@ -2594,11 +3118,20 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("JobTot.Domain.Entities.JobPost", b =>
                 {
-                    b.HasOne("JobTot.Domain.Entities.Company", null)
+                    b.HasOne("JobTot.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.Province", "Province")
+                        .WithMany()
+                        .HasForeignKey("ProvinceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Province");
                 });
 
             modelBuilder.Entity("JobTot.Domain.Entities.Media", b =>
@@ -2883,6 +3416,68 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.AccountMessageRead", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Infrastructure.Persistence.ChatMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.AccountNotificationRead", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.ChatConversation", b =>
+                {
+                    b.HasOne("JobTot.Domain.Entities.Account", "FirstAccount")
+                        .WithMany()
+                        .HasForeignKey("FirstAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.Account", "SecondAccount")
+                        .WithMany()
+                        .HasForeignKey("SecondAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FirstAccount");
+
+                    b.Navigation("SecondAccount");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.ChatMessage", b =>
+                {
+                    b.HasOne("JobTot.Infrastructure.Persistence.ChatConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JobTot.Domain.Entities.Account", "SenderAccount")
+                        .WithMany()
+                        .HasForeignKey("SenderAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("SenderAccount");
+                });
+
             modelBuilder.Entity("JobTot.Domain.Entities.Account", b =>
                 {
                     b.Navigation("Articles");
@@ -3043,6 +3638,11 @@ namespace JobTot.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("JobTot.Domain.Entities.TalentTag", b =>
                 {
                     b.Navigation("TalentPoolTags");
+                });
+
+            modelBuilder.Entity("JobTot.Infrastructure.Persistence.ChatConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

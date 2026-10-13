@@ -13,10 +13,14 @@ public static class DependencyInjection
         services.AddDbContext<RecruitmentDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.EnableRetryOnFailure()));
         services.AddScoped<IRecruitmentRepository, RecruitmentRepository>();
+        services.AddScoped<JobTot.Application.Cvs.ICvRepository, CvRepository>();
+        services.AddScoped<JobTot.Application.Profiles.ICandidateJobsRepository, CandidateJobsRepository>();
         services.AddScoped<JobTot.Application.Companies.ICompanyDirectoryRepository, CompanyDirectoryRepository>();
         services.AddScoped<ICandidateAuthRepository, CandidateAuthRepository>();
         services.AddScoped<JobTot.Application.Profiles.ICandidateProfileRepository, CandidateProfileRepository>();
         services.AddScoped<CandidateAuthService>();
+        services.AddScoped<IEmployerAuthRepository, EmployerAuthRepository>();
+        services.AddScoped<EmployerAuthService>();
         services.AddSingleton<IAccountPasswordHasher, AccountPasswordHasher>();
         return services;
     }
