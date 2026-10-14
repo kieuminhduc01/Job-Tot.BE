@@ -1,3 +1,5 @@
+> Historical reference: standalone SQL seed/export files and test suites were removed at the project owner's request. Commands referencing those deleted files are no longer available. Application source and EF migrations are retained; existing SQL Server data is unchanged.
+
 # Seed dữ liệu demo trên SQL Server
 
 Thư mục này chứa `seed-demo.sql`, chạy trực tiếp bằng SSMS hoặc sqlcmd.

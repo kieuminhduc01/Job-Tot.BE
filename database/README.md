@@ -1,21 +1,21 @@
-# Database demo datasets
+> Historical reference: standalone SQL seed/export files and test suites were removed at the project owner's request. Commands referencing those deleted files are no longer available. Application source and EF migrations are retained; existing SQL Server data is unchanged.
 
-`demo-data.json` is a one-time database import file, not application runtime data.
-Frontend and API contain no fallback copies of these records. The JSON import is
-not served to browsers. Edit records in `dbo.DemoDatasets` to change previews.
+# SQL Server preview data
 
-From `src/JobTot.Api`, with the usual Development configuration:
+Application preview content is stored in `JobTot.dbo.DemoDatasets` and read through
+`GET /api/demo-data/{key}`. No JSON data files are loaded at runtime.
+
+The local JobTot database has been populated with all four public preview datasets.
+For another database, apply EF migrations first, then run:
 
 ```powershell
-$env:ASPNETCORE_ENVIRONMENT='Development'
-dotnet run -c CodexVerify -- --import-demo-data ../../database/demo-data.json
+sqlcmd -S .\SQLEXPRESS -d JobTot -E -C -b -f 65001 -i database/preview-data.sql
 ```
 
-This command creates the table if needed, imports missing keys transactionally,
-preserves existing records and exits without starting a web server. The EF migration
-also creates the table idempotently, so provisioning and migrations can run in either
-order. Normal API startup never populates or overwrites demo data.
+Run from the backend root. The script is transactional and inserts missing keys only;
+existing database edits are preserved. Application startup does not seed data.
+`preview-data.sql` is a provisioning script; the running application reads SQL Server.
 
-Only explicitly public preview keys are exposed by `GET /api/demo-data/{key}`.
-Do not store actual account credentials or private conversations in this table.
-Real messages must use participant-authorized messaging tables and endpoints.
+Only explicitly public preview keys are exposed. Account profiles and conversations
+continue to use their existing authorized database tables and endpoints. Never put
+private conversations or credentials in public preview content.

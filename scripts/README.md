@@ -1,3 +1,5 @@
+> Historical reference: standalone SQL seed/export files and test suites were removed at the project owner's request. Commands referencing those deleted files are no longer available. Application source and EF migrations are retained; existing SQL Server data is unchanged.
+
 # Company directory development data
 
 Apply the current EF migrations before running seeds (`dotnet ef database update --project src/JobTot.Infrastructure --startup-project src/JobTot.Api`).

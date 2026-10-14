@@ -11,9 +11,9 @@ namespace JobTot.Api.Controllers;
 public sealed class CareerArticlesController(RecruitmentDbContext db, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet("api/career-articles")]
-    public async Task<IActionResult> Published(CancellationToken ct) => Ok(await db.CareerArticles.AsNoTracking()
+    public Task<IActionResult> Published(CancellationToken ct) => ReadWithCancellationAsync(async () => Ok(await db.CareerArticles.AsNoTracking()
         .Where(x => x.Published).OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id)
-        .Select(x => new { x.Id, x.Title, x.Category, x.Summary, x.UpdatedAt, x.CoverUrl }).Take(200).ToListAsync(ct));
+        .Select(x => new { x.Id, x.Title, x.Category, x.Summary, x.UpdatedAt, x.CoverUrl }).Take(200).ToListAsync(ct)));
 
     [Authorize(Policy = AdminAuthentication.Policy)]
     [HttpPost("api/admin/career-articles/{id:guid}/cover")]
@@ -47,16 +47,31 @@ public sealed class CareerArticlesController(RecruitmentDbContext db, IWebHostEn
     }
 
     [HttpGet("api/career-articles/{id:guid}")]
-    public async Task<IActionResult> Read(Guid id, CancellationToken ct)
+    public Task<IActionResult> Read(Guid id, CancellationToken ct) => ReadWithCancellationAsync(async () =>
     {
         var article = await db.CareerArticles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published, ct);
         return article is null ? NotFound() : Ok(article);
-    }
+    });
 
     [Authorize(Policy = AdminAuthentication.Policy)]
     [HttpGet("api/admin/career-articles")]
-    public async Task<IActionResult> List(CancellationToken ct) => Ok(await db.CareerArticles.AsNoTracking()
-        .OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id).Take(200).ToListAsync(ct));
+    public Task<IActionResult> List(CancellationToken ct) => ReadWithCancellationAsync(async () => Ok(await db.CareerArticles.AsNoTracking()
+        .OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id).Take(200).ToListAsync(ct)));
+
+    private async Task<IActionResult> ReadWithCancellationAsync(Func<Task<IActionResult>> query)
+    {
+        // Do not open a database connection for a client that has already disconnected.
+        if (HttpContext.RequestAborted.IsCancellationRequested)
+            return StatusCode(StatusCodes.Status499ClientClosedRequest);
+        try
+        {
+            return await query();
+        }
+        catch (Exception exception) when (RequestCancellation.IsClientCancellation(exception, HttpContext.RequestAborted))
+        {
+            return StatusCode(StatusCodes.Status499ClientClosedRequest);
+        }
+    }
 
     [Authorize(Policy = AdminAuthentication.Policy)]
     [HttpPost("api/admin/career-articles")]

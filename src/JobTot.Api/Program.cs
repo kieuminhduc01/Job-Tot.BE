@@ -59,14 +59,6 @@ if (args.Contains("--migrate-avatars"))
     await app.DisposeAsync();
     return;
 }
-if (Array.IndexOf(args, "--import-demo-data") is var importIndex && importIndex >= 0)
-{
-    if (importIndex + 1 >= args.Length) throw new ArgumentException("Supply a JSON dataset file.");
-    using var scope = app.Services.CreateScope();
-    await DemoDataImport.RunAsync(scope.ServiceProvider.GetRequiredService<JobTot.Infrastructure.Persistence.RecruitmentDbContext>(), args[importIndex + 1]);
-    await app.DisposeAsync();
-    return;
-}
 // Explicit one-shot provisioning, never grant admin privileges from a public registration request.
 if (args.Contains("--create-admin") || args.Contains("--create-cv-admin"))
 {

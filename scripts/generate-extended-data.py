@@ -8,7 +8,16 @@ import uuid
 root = Path(__file__).resolve().parents[1]
 backup = root / 'database/demo-data.sql'
 text = backup.read_text(encoding='utf-16')
-datasets = json.loads((root / 'database/demo-data.json').read_text(encoding='utf-8'))
+preview_sql = (root / 'database/preview-data.sql').read_text(encoding='utf-8-sig')
+datasets = [
+    {'key': key.replace("''", "'"), 'payload': json.loads(payload.replace("''", "'"))}
+    for key, payload in re.findall(
+        r"INSERT INTO dbo\.DemoDatasets \(\[Key\],Payload\) VALUES \(N'((?:[^']|'')*)',N'((?:[^']|'')*)'\);",
+        preview_sql,
+    )
+]
+if not datasets:
+    raise ValueError('No preview datasets found in database/preview-data.sql')
 tables = set(re.findall(r'CREATE TABLE \[dbo\]\.\[([^\]]+)\]', text))
 namespace = uuid.UUID('b732ef27-8f99-4544-927d-22df82bb5b4f')
 
@@ -30,7 +39,7 @@ def js(value):
 class Raw(str):
     pass
 
-out = [f"""-- JobTot supplemental demo data. Generated from demo-data.sql + demo-data.json.
+out = [f"""-- JobTot supplemental demo data. Generated from demo-data.sql + preview-data.sql.
 -- Backup SHA256: {hashlib.sha256(backup.read_bytes()).hexdigest()}
 -- Run AFTER restoring demo-data.sql. This is NOT a full database backup.
 -- No existing accounts, credentials, CVs, jobs, companies or sessions are replaced.

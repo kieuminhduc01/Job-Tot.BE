@@ -4,7 +4,7 @@ Mở `extened.sql` trong SQL Server Management Studio và chạy trên database 
 sau khi đã restore `demo-data.sql`. Đây là script bổ sung, không phải bản backup đầy đủ.
 File SQL dùng UTF-8 có BOM và chuỗi Unicode `N'...'` để giữ nguyên tiếng Việt.
 
-Nguồn dữ liệu: backup `demo-data.sql`, bốn bộ dữ liệu trong `demo-data.json`,
+Nguồn dữ liệu: backup `demo-data.sql`, bốn bộ dữ liệu trong `preview-data.sql`,
 và bốn bài viết trong thành phần CareerKnowledge. Các danh mục ngành nghề,
 tỉnh/thành hiện có được tái sử dụng. Backup đã có 100 doanh nghiệp, 500 việc làm,
 9 mẫu CV, 9 danh mục CV nên script không chép lại các bản ghi này.
