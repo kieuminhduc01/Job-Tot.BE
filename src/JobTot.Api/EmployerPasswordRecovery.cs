@@ -5,11 +5,23 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace JobTot.Api;
 
-public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository, IAccountPasswordHasher passwords,
-    IDataProtectionProvider protection, IRecoveryEmailSender sender, IConfiguration configuration)
+public sealed class EmployerPasswordRecovery(
+    IEmployerAuthRepository repository,
+    IAccountPasswordHasher passwords,
+    IDataProtectionProvider protection,
+    IRecoveryEmailSender sender,
+    IConfiguration configuration
+)
 {
-    private readonly IDataProtector protector = protection.CreateProtector("JobTot.Employer.PasswordReset.v1");
-    private sealed record ResetTicket(Guid AccountId, string PasswordHash, DateTimeOffset ExpiresAt);
+    private readonly IDataProtector protector = protection.CreateProtector(
+        "JobTot.Employer.PasswordReset.v1"
+    );
+
+    private sealed record ResetTicket(
+        Guid AccountId,
+        string PasswordHash,
+        DateTimeOffset ExpiresAt
+    );
 
     public async Task RequestAsync(string email, CancellationToken ct)
     {
@@ -18,13 +30,37 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
             var url = configuration["PasswordRecovery:FrontendUrl"];
             var smtpHost = configuration["PasswordRecovery:Smtp:Host"];
             // Fail consistently for every email when delivery has not been configured.
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var frontend) || frontend.Scheme is not ("https" or "http") || string.IsNullOrWhiteSpace(smtpHost) || string.IsNullOrWhiteSpace(configuration["PasswordRecovery:Smtp:From"]))
+            if (
+                !Uri.TryCreate(url, UriKind.Absolute, out var frontend)
+                || frontend.Scheme is not ("https" or "http")
+                || string.IsNullOrWhiteSpace(smtpHost)
+                || string.IsNullOrWhiteSpace(configuration["PasswordRecovery:Smtp:From"])
+            )
                 throw new InvalidOperationException("Password recovery is not configured.");
-            var account = await repository.FindAsync(new CandidateIdentifier(email.Trim().ToLowerInvariant(), null), ct);
-            if (account is null || !EmployerAuthService.IsActiveEmployer(account) || account.PasswordHash is null)
+            var account = await repository.FindAsync(
+                new CandidateIdentifier(email.Trim().ToLowerInvariant(), null),
+                ct
+            );
+            if (
+                account is null
+                || !EmployerAuthService.IsActiveEmployer(account)
+                || account.PasswordHash is null
+            )
                 return;
-            var token = protector.Protect(JsonSerializer.Serialize(new ResetTicket(account.Id, account.PasswordHash, DateTimeOffset.UtcNow.AddMinutes(30))));
-            await sender.SendAsync(account.Email!, $"{url!.TrimEnd('/')}/reset-password?role=employer#token={Uri.EscapeDataString(token)}", ct);
+            var token = protector.Protect(
+                JsonSerializer.Serialize(
+                    new ResetTicket(
+                        account.Id,
+                        account.PasswordHash,
+                        DateTimeOffset.UtcNow.AddMinutes(30)
+                    )
+                )
+            );
+            await sender.SendAsync(
+                account.Email!,
+                $"{url!.TrimEnd('/')}/reset-password?role=employer#token={Uri.EscapeDataString(token)}",
+                ct
+            );
         }
         catch (OperationCanceledException)
         {
@@ -32,7 +68,10 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "EmployerPasswordRecovery.RequestAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "EmployerPasswordRecovery.RequestAsync"
+            );
             throw;
         }
     }
@@ -44,9 +83,12 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
             ResetTicket? ticket;
             try
             {
-                ticket = JsonSerializer.Deserialize<ResetTicket>(protector.Unprotect(request.Token));
+                ticket = JsonSerializer.Deserialize<ResetTicket>(
+                    protector.Unprotect(request.Token)
+                );
             }
-            catch (Exception failure) when (failure is CryptographicException or JsonException or ArgumentException)
+            catch (Exception failure)
+                when (failure is CryptographicException or JsonException or ArgumentException)
             {
                 throw InvalidLink();
             }
@@ -54,9 +96,20 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
             if (ticket is null || ticket.ExpiresAt <= DateTimeOffset.UtcNow)
                 throw InvalidLink();
             var account = await repository.GetAsync(ticket.AccountId, ct);
-            if (account is null || !EmployerAuthService.IsActiveEmployer(account) || account.PasswordHash != ticket.PasswordHash)
+            if (
+                account is null
+                || !EmployerAuthService.IsActiveEmployer(account)
+                || account.PasswordHash != ticket.PasswordHash
+            )
                 throw InvalidLink();
-            if (!await repository.ResetPasswordAsync(account.Id, ticket.PasswordHash, passwords.Hash(account, request.Password), ct))
+            if (
+                !await repository.ResetPasswordAsync(
+                    account.Id,
+                    ticket.PasswordHash,
+                    passwords.Hash(account, request.Password),
+                    ct
+                )
+            )
                 throw InvalidLink();
         }
         catch (OperationCanceledException)
@@ -65,7 +118,10 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "EmployerPasswordRecovery.ResetAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "EmployerPasswordRecovery.ResetAsync"
+            );
             throw;
         }
     }
@@ -74,7 +130,9 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
     {
         try
         {
-            return new("Liên kết khôi phục không hợp lệ hoặc đã hết hạn. Vui lòng gửi yêu cầu mới.");
+            return new(
+                "Liên kết khôi phục không hợp lệ hoặc đã hết hạn. Vui lòng gửi yêu cầu mới."
+            );
         }
         catch (OperationCanceledException)
         {
@@ -82,7 +140,10 @@ public sealed class EmployerPasswordRecovery(IEmployerAuthRepository repository,
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "EmployerPasswordRecovery.InvalidLink");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "EmployerPasswordRecovery.InvalidLink"
+            );
             throw;
         }
     }

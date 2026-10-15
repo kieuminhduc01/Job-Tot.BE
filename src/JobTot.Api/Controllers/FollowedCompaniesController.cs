@@ -9,9 +9,11 @@ namespace JobTot.Api.Controllers;
 [Route("api/candidate/followed-companies")]
 [Authorize(Policy = CandidateAuthentication.Policy)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class FollowedCompaniesController(ICompanyDirectoryRepository directory) : ControllerBase
+public sealed class FollowedCompaniesController(ICompanyDirectoryRepository directory)
+    : ControllerBase
 {
     private Guid AccountId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<Guid>>> List(CancellationToken ct)
     {
@@ -25,10 +27,14 @@ public sealed class FollowedCompaniesController(ICompanyDirectoryRepository dire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.List");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "FollowedCompaniesController.List"
+            );
             throw;
         }
     }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Follow(Guid id, CancellationToken ct)
     {
@@ -43,10 +49,14 @@ public sealed class FollowedCompaniesController(ICompanyDirectoryRepository dire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.Follow");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "FollowedCompaniesController.Follow"
+            );
             throw;
         }
     }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Unfollow(Guid id, CancellationToken ct)
     {
@@ -61,7 +71,10 @@ public sealed class FollowedCompaniesController(ICompanyDirectoryRepository dire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "FollowedCompaniesController.Unfollow");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "FollowedCompaniesController.Unfollow"
+            );
             throw;
         }
     }

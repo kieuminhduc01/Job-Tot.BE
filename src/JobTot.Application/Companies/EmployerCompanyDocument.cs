@@ -4,15 +4,30 @@ namespace JobTot.Application.Companies;
 
 public sealed class EmployerCompanyDocument
 {
-    [Required, StringLength(200)] public string Name { get; set; } = "";
-    [StringLength(4000)] public string Description { get; set; } = "";
-    [StringLength(200)] public string Address { get; set; } = "";
-    [StringLength(2048)] public string Website { get; set; } = "";
-    [Range(1800, 2100)] public int? FoundedYear { get; set; }
-    [Range(1, 1000000)] public int? SizeMin { get; set; }
-    [Range(1, 1000000)] public int? SizeMax { get; set; }
+    [Required, StringLength(200)]
+    public string Name { get; set; } = "";
+
+    [StringLength(4000)]
+    public string Description { get; set; } = "";
+
+    [StringLength(200)]
+    public string Address { get; set; } = "";
+
+    [StringLength(2048)]
+    public string Website { get; set; } = "";
+
+    [Range(1800, 2100)]
+    public int? FoundedYear { get; set; }
+
+    [Range(1, 1000000)]
+    public int? SizeMin { get; set; }
+
+    [Range(1, 1000000)]
+    public int? SizeMax { get; set; }
     public EmployerCompanyBrand Brand { get; set; } = new();
-    [Required, StringLength(64)] public string Revision { get; set; } = "";
+
+    [Required, StringLength(64)]
+    public string Revision { get; set; } = "";
 }
 
 public sealed class EmployerCompanyBrand
@@ -45,7 +60,23 @@ public sealed class EmployerBrandItem
     public string Tag { get; set; } = "";
 }
 
-public sealed record EmployerCompanyMember(Guid Id, string Name, string? Title, string? Email, bool IsCompanyAdmin);
-public sealed record EmployerCompanyResponse(Guid Id, string? LegalName, string? TaxCode, string? VerificationStatus,
-    string? Province, bool CanEdit, int OpenJobs, int Followers, EmployerCompanyDocument Document,
-    IReadOnlyList<EmployerCompanyMember> Team);
+public sealed record EmployerCompanyMember(
+    Guid Id,
+    string Name,
+    string? Title,
+    string? Email,
+    bool IsCompanyAdmin
+);
+
+public sealed record EmployerCompanyResponse(
+    Guid Id,
+    string? LegalName,
+    string? TaxCode,
+    string? VerificationStatus,
+    string? Province,
+    bool CanEdit,
+    int OpenJobs,
+    int Followers,
+    EmployerCompanyDocument Document,
+    IReadOnlyList<EmployerCompanyMember> Team
+);

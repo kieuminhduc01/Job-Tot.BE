@@ -15,6 +15,7 @@ public sealed class JobApplication : AuditableEntity
     public DateTimeOffset AppliedAt { get; set; }
     public string? CoverLetter { get; set; }
     public decimal? MatchScore { get; set; }
-    public ICollection<ApplicationStageHistory> ApplicationStageHistorys { get; set; } = new List<ApplicationStageHistory>();
+    public ICollection<ApplicationStageHistory> ApplicationStageHistorys { get; set; } =
+        new List<ApplicationStageHistory>();
     public ICollection<Interview> Interviews { get; set; } = new List<Interview>();
 }

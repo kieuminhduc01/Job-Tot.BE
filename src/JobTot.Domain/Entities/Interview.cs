@@ -11,5 +11,6 @@ public sealed class Interview : AuditableEntity
     public string? MeetingUrl { get; set; }
     public string? Location { get; set; }
     public string? InterviewStatus { get; set; }
-    public ICollection<InterviewFeedback> InterviewFeedbacks { get; set; } = new List<InterviewFeedback>();
+    public ICollection<InterviewFeedback> InterviewFeedbacks { get; set; } =
+        new List<InterviewFeedback>();
 }

@@ -18,6 +18,8 @@ public sealed class CandidateProfile : AuditableEntity
     public ICollection<CandidateCv> CandidateCvs { get; set; } = new List<CandidateCv>();
     public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
     public ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
-    public ICollection<FollowedCompany> FollowedCompanys { get; set; } = new List<FollowedCompany>();
-    public ICollection<TalentPoolEntry> TalentPoolEntrys { get; set; } = new List<TalentPoolEntry>();
+    public ICollection<FollowedCompany> FollowedCompanys { get; set; } =
+        new List<FollowedCompany>();
+    public ICollection<TalentPoolEntry> TalentPoolEntrys { get; set; } =
+        new List<TalentPoolEntry>();
 }

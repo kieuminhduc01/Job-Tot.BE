@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -15,10 +15,12 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 name: "ProvinceId",
                 table: "Jobs",
                 type: "uniqueidentifier",
-                nullable: true);
+                nullable: true
+            );
 
             // Only map unambiguous full catalog names. Never infer the work location from the company office.
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 UPDATE job SET ProvinceId = province.Id
                 FROM dbo.Jobs job
                 JOIN dbo.Province province ON province.ProvinceName = job.Location AND province.Status = 1
@@ -26,12 +28,14 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     SELECT 1 FROM dbo.Province duplicate
                     WHERE duplicate.ProvinceName = province.ProvinceName AND duplicate.Status = 1
                         AND duplicate.Id <> province.Id);
-                """);
+                """
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Jobs_ProvinceId_IsClosed_ExpiresAt",
                 table: "Jobs",
-                columns: new[] { "ProvinceId", "IsClosed", "ExpiresAt" });
+                columns: new[] { "ProvinceId", "IsClosed", "ExpiresAt" }
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Jobs_Province_ProvinceId",
@@ -39,23 +43,21 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 column: "ProvinceId",
                 principalTable: "Province",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Restrict
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Jobs_Province_ProvinceId",
-                table: "Jobs");
+            migrationBuilder.DropForeignKey(name: "FK_Jobs_Province_ProvinceId", table: "Jobs");
 
             migrationBuilder.DropIndex(
                 name: "IX_Jobs_ProvinceId_IsClosed_ExpiresAt",
-                table: "Jobs");
+                table: "Jobs"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "ProvinceId",
-                table: "Jobs");
+            migrationBuilder.DropColumn(name: "ProvinceId", table: "Jobs");
         }
     }
 }

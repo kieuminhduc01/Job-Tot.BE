@@ -8,8 +8,10 @@ namespace JobTot.Api.Controllers;
 public sealed class JobsController(RecruitmentService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PageResult<JobDto>>> Search([FromQuery] JobSearch query, CancellationToken ct)
-
+    public async Task<ActionResult<PageResult<JobDto>>> Search(
+        [FromQuery] JobSearch query,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -21,13 +23,16 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "JobsController.Search");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "JobsController.Search"
+            );
             throw;
         }
     }
+
     [HttpGet("filters")]
     public async Task<ActionResult<JobDirectoryMetadata>> Filters(CancellationToken ct)
-
     {
         try
         {
@@ -39,13 +44,16 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "JobsController.Filters");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "JobsController.Filters"
+            );
             throw;
         }
     }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<JobDto>> Get(Guid id, CancellationToken ct)
-
     {
         try
         {
@@ -61,6 +69,7 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
             throw;
         }
     }
+
     [HttpPost]
     public async Task<ActionResult<JobDto>> Create(CreateJobRequest request, CancellationToken ct)
     {
@@ -75,13 +84,20 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "JobsController.Create");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "JobsController.Create"
+            );
             throw;
         }
     }
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<JobDto>> Update(Guid id, SaveJobRequest request, CancellationToken ct)
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<JobDto>> Update(
+        Guid id,
+        SaveJobRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -93,10 +109,14 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "JobsController.Update");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "JobsController.Update"
+            );
             throw;
         }
     }
+
     [HttpPost("{id:guid}/close")]
     public async Task<IActionResult> Close(Guid id, CancellationToken ct)
     {
@@ -111,7 +131,10 @@ public sealed class JobsController(RecruitmentService service) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "JobsController.Close");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "JobsController.Close"
+            );
             throw;
         }
     }

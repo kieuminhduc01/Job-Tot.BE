@@ -11,9 +11,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JobTot.Api.Controllers;
 
-[ApiController, Route("api/admin"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepository repository,
-    IAccountPasswordHasher hasher, CandidateJwtSettings settings) : ControllerBase
+[
+    ApiController,
+    Route("api/admin"),
+    ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)
+]
+public sealed class AdminCvTemplatesController(
+    RecruitmentDbContext db,
+    ICvRepository repository,
+    IAccountPasswordHasher hasher,
+    CandidateJwtSettings settings
+) : ControllerBase
 {
     [HttpPost("auth/login"), EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
     public async Task<IActionResult> Login(CandidateLoginRequest input, CancellationToken ct)
@@ -21,10 +29,21 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         try
         {
             var login = input.EmailOrPhone.Trim().ToLowerInvariant();
-            var account = await db.AccountRecords.SingleOrDefaultAsync(a => a.Email == login || a.Phone == login, ct);
+            var account = await db.AccountRecords.SingleOrDefaultAsync(
+                a => a.Email == login || a.Phone == login,
+                ct
+            );
             var valid = hasher.Verify(account ?? new Account(), input.Password, out var rehash);
-            if (!valid || account is null || account.AccountType != "Admin" || account.AccountStatus != "Active" || account.Status != EntityStatus.Active)
-                return Unauthorized(new ProblemDetails { Detail = "Thông tin đăng nhập admin không hợp lệ." });
+            if (
+                !valid
+                || account is null
+                || account.AccountType != "Admin"
+                || account.AccountStatus != "Active"
+                || account.Status != EntityStatus.Active
+            )
+                return Unauthorized(
+                    new ProblemDetails { Detail = "Thông tin đăng nhập admin không hợp lệ." }
+                );
             if (rehash)
                 account.PasswordHash = hasher.Hash(account, input.Password);
             var expires = DateTimeOffset.UtcNow.AddHours(2);
@@ -33,11 +52,24 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
                 AccountId = account.Id,
                 PasswordStamp = AdminAuthentication.Stamp(account.PasswordHash!),
                 ExpiresAt = expires,
-                TokenHash = Guid.NewGuid().ToString()
+                TokenHash = Guid.NewGuid().ToString(),
             };
             db.Add(session);
             await db.SaveChangesAsync(ct);
-            return Ok(new { AccessToken = AdminAuthentication.Issue(settings, account.Id, session.Id, account.FullName, expires), ExpiresAt = expires, account.FullName });
+            return Ok(
+                new
+                {
+                    AccessToken = AdminAuthentication.Issue(
+                        settings,
+                        account.Id,
+                        session.Id,
+                        account.FullName,
+                        expires
+                    ),
+                    ExpiresAt = expires,
+                    account.FullName,
+                }
+            );
         }
         catch (OperationCanceledException)
         {
@@ -45,10 +77,14 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Login");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Login"
+            );
             throw;
         }
     }
+
     [HttpPost("auth/logout"), Authorize(Policy = AdminAuthentication.Policy)]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
@@ -67,10 +103,14 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Logout");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Logout"
+            );
             throw;
         }
     }
+
     [HttpGet("cv-templates"), Authorize(Policy = AdminAuthentication.Policy)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -84,10 +124,14 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.List");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.List"
+            );
             throw;
         }
     }
+
     [HttpGet("cv-templates/{id:guid}"), Authorize(Policy = AdminAuthentication.Policy)]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
@@ -101,10 +145,14 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Get"
+            );
             throw;
         }
     }
+
     [HttpPost("cv-templates"), Authorize(Policy = AdminAuthentication.Policy)]
     public async Task<IActionResult> Create(CvTemplateWrite input, CancellationToken ct)
     {
@@ -118,10 +166,14 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Create");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Create"
+            );
             throw;
         }
     }
+
     [HttpPut("cv-templates/{id:guid}"), Authorize(Policy = AdminAuthentication.Policy)]
     public async Task<IActionResult> Update(Guid id, CvTemplateWrite input, CancellationToken ct)
     {
@@ -135,21 +187,39 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Update");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Update"
+            );
             throw;
         }
     }
+
     private async Task<IActionResult> Write(Guid? id, CvTemplateWrite input, CancellationToken ct)
     {
         try
         {
             try
             {
-                return await repository.WriteTemplateAsync(id, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), input, ct) is { } t ? Ok(t) : NotFound();
+                return
+                    await repository.WriteTemplateAsync(
+                        id,
+                        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                        input,
+                        ct
+                    )
+                        is { } t
+                    ? Ok(t)
+                    : NotFound();
             }
             catch (CvVersionConflictException)
             {
-                return Conflict(new ProblemDetails { Detail = "Mẫu đã thay đổi ở tab khác. Hãy tải lại trước khi lưu." });
+                return Conflict(
+                    new ProblemDetails
+                    {
+                        Detail = "Mẫu đã thay đổi ở tab khác. Hãy tải lại trước khi lưu.",
+                    }
+                );
             }
         }
         catch (OperationCanceledException)
@@ -158,7 +228,10 @@ public sealed class AdminCvTemplatesController(RecruitmentDbContext db, ICvRepos
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "AdminCvTemplatesController.Write");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "AdminCvTemplatesController.Write"
+            );
             throw;
         }
     }

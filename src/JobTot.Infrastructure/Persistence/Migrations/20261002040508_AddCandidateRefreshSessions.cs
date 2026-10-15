@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -17,11 +17,25 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     AccountId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TokenHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
-                    PasswordStamp = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    RevokedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    Version = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    TokenHash = table.Column<string>(
+                        type: "nvarchar(64)",
+                        maxLength: 64,
+                        nullable: false
+                    ),
+                    PasswordStamp = table.Column<string>(
+                        type: "nvarchar(64)",
+                        maxLength: 64,
+                        nullable: false
+                    ),
+                    ExpiresAt = table.Column<DateTimeOffset>(
+                        type: "datetimeoffset",
+                        nullable: false
+                    ),
+                    RevokedAt = table.Column<DateTimeOffset>(
+                        type: "datetimeoffset",
+                        nullable: true
+                    ),
+                    Version = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -31,15 +45,21 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         column: x => x.AccountId,
                         principalTable: "Account",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "UsedCandidateRefreshTokens",
                 columns: table => new
                 {
-                    TokenHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
-                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    TokenHash = table.Column<string>(
+                        type: "nvarchar(64)",
+                        maxLength: 64,
+                        nullable: false
+                    ),
+                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -49,28 +69,30 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                         column: x => x.SessionId,
                         principalTable: "CandidateRefreshSessions",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_CandidateRefreshSessions_AccountId",
                 table: "CandidateRefreshSessions",
-                column: "AccountId");
+                column: "AccountId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_UsedCandidateRefreshTokens_SessionId",
                 table: "UsedCandidateRefreshTokens",
-                column: "SessionId");
+                column: "SessionId"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "UsedCandidateRefreshTokens");
+            migrationBuilder.DropTable(name: "UsedCandidateRefreshTokens");
 
-            migrationBuilder.DropTable(
-                name: "CandidateRefreshSessions");
+            migrationBuilder.DropTable(name: "CandidateRefreshSessions");
         }
     }
 }

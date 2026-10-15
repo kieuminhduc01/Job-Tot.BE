@@ -9,17 +9,30 @@ namespace JobTot.Api.Controllers;
 [ApiController]
 [Route("api/candidate/auth")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class CandidateAuthController(CandidateAuthService service, CandidateTokens tokens, PasswordRecovery recovery, AccountEmailSecurity emailSecurity) : ControllerBase
+public sealed class CandidateAuthController(
+    CandidateAuthService service,
+    CandidateTokens tokens,
+    PasswordRecovery recovery,
+    AccountEmailSecurity emailSecurity
+) : ControllerBase
 {
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
     [ProducesResponseType<CandidateSessionDto>(StatusCodes.Status201Created)]
-    public async Task<ActionResult<CandidateSessionDto>> Register(CandidateRegisterRequest request, CancellationToken ct)
+    public async Task<ActionResult<CandidateSessionDto>> Register(
+        CandidateRegisterRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
-            await emailSecurity.RequireVerification(request.EmailOrPhone, "Candidate", request.EmailVerificationToken, ct);
+            await emailSecurity.RequireVerification(
+                request.EmailOrPhone,
+                "Candidate",
+                request.EmailVerificationToken,
+                ct
+            );
             var account = await service.RegisterAsync(request, ct);
             var session = await tokens.CreateAsync(account, rememberMe: false, ct);
             return CreatedAtAction(nameof(Me), session);
@@ -30,7 +43,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.Register");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.Register"
+            );
             throw;
         }
     }
@@ -38,18 +54,34 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
-    public async Task<ActionResult<CandidateSessionDto>> Login(CandidateLoginRequest request, CancellationToken ct)
+    public async Task<ActionResult<CandidateSessionDto>> Login(
+        CandidateLoginRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
             var account = await service.LoginAsync(request, ct);
             if (account is null)
             {
-                var changeToken = await emailSecurity.TemporaryLogin(request.EmailOrPhone, "Candidate", request.Password, ct);
-                if (changeToken != null) return StatusCode(428, new { detail = "Đặt mật khẩu mới để hoàn tất đăng nhập.", changeToken });
+                var changeToken = await emailSecurity.TemporaryLogin(
+                    request.EmailOrPhone,
+                    "Candidate",
+                    request.Password,
+                    ct
+                );
+                if (changeToken != null)
+                    return StatusCode(
+                        428,
+                        new { detail = "Đặt mật khẩu mới để hoàn tất đăng nhập.", changeToken }
+                    );
             }
             if (account is null)
-                return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Đăng nhập không thành công", detail: "Email/số điện thoại hoặc mật khẩu không đúng, hoặc tài khoản không khả dụng.");
+                return Problem(
+                    statusCode: StatusCodes.Status401Unauthorized,
+                    title: "Đăng nhập không thành công",
+                    detail: "Email/số điện thoại hoặc mật khẩu không đúng, hoặc tài khoản không khả dụng."
+                );
             return Ok(await tokens.CreateAsync(account, request.RememberMe, ct));
         }
         catch (OperationCanceledException)
@@ -58,7 +90,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.Login");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.Login"
+            );
             throw;
         }
     }
@@ -69,7 +104,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
     {
         try
         {
-            var account = await service.GetActiveAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), ct);
+            var account = await service.GetActiveAsync(
+                Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                ct
+            );
             return account is null ? Unauthorized() : Ok(account);
         }
         catch (OperationCanceledException)
@@ -78,7 +116,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.Me");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.Me"
+            );
             throw;
         }
     }
@@ -86,12 +127,20 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken ct)
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
             await emailSecurity.RequestTemporaryPassword(request.Email, "Candidate", ct);
-            return Ok(new { message = "Nếu email liên kết với tài khoản khả dụng, bạn sẽ nhận được mật khẩu tạm có hiệu lực 30 phút." });
+            return Ok(
+                new
+                {
+                    message = "Nếu email liên kết với tài khoản khả dụng, bạn sẽ nhận được mật khẩu tạm có hiệu lực 30 phút.",
+                }
+            );
         }
         catch (OperationCanceledException)
         {
@@ -99,7 +148,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.ForgotPassword");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.ForgotPassword"
+            );
             throw;
         }
     }
@@ -107,7 +159,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
     [HttpPost("reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct)
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -120,7 +175,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.ResetPassword");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.ResetPassword"
+            );
             throw;
         }
     }
@@ -128,12 +186,16 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
     [HttpPost("refresh")]
     [AllowAnonymous]
     [EnableRateLimiting(CandidateAuthentication.RateLimitPolicy)]
-    public async Task<ActionResult<CandidateSessionDto>> Refresh(CandidateRefreshRequest request, CancellationToken ct)
-
+    public async Task<ActionResult<CandidateSessionDto>> Refresh(
+        CandidateRefreshRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
-            return await tokens.RefreshAsync(request.RefreshToken, ct) is { } session ? Ok(session) : Unauthorized();
+            return await tokens.RefreshAsync(request.RefreshToken, ct) is { } session
+                ? Ok(session)
+                : Unauthorized();
         }
         catch (OperationCanceledException)
         {
@@ -141,7 +203,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.Refresh");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.Refresh"
+            );
             throw;
         }
     }
@@ -161,7 +226,10 @@ public sealed class CandidateAuthController(CandidateAuthService service, Candid
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthController.Logout");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthController.Logout"
+            );
             throw;
         }
     }

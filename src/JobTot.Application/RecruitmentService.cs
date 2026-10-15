@@ -4,8 +4,12 @@ namespace JobTot.Application;
 
 public sealed class RecruitmentService(IRecruitmentRepository repository)
 {
-    public async Task<PageResult<CompanyDto>> GetCompaniesAsync(int page, int size, CancellationToken ct, string? keyword = null)
-
+    public async Task<PageResult<CompanyDto>> GetCompaniesAsync(
+        int page,
+        int size,
+        CancellationToken ct,
+        string? keyword = null
+    )
     {
         try
         {
@@ -17,15 +21,21 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.GetCompaniesAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.GetCompaniesAsync"
+            );
             throw;
         }
     }
+
     public async Task<CompanyDto> GetCompanyAsync(Guid id, CancellationToken ct)
     {
         try
         {
-            var company = await repository.GetCompanyAsync(id, ct) ?? throw new NotFoundException("Company not found.");
+            var company =
+                await repository.GetCompanyAsync(id, ct)
+                ?? throw new NotFoundException("Company not found.");
             return new(company.Id, company.Name, company.Description);
         }
         catch (OperationCanceledException)
@@ -34,11 +44,18 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.GetCompanyAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.GetCompanyAsync"
+            );
             throw;
         }
     }
-    public async Task<CompanyDto> CreateCompanyAsync(CreateCompanyRequest request, CancellationToken ct)
+
+    public async Task<CompanyDto> CreateCompanyAsync(
+        CreateCompanyRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -53,12 +70,15 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.CreateCompanyAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.CreateCompanyAsync"
+            );
             throw;
         }
     }
-    public async Task<PageResult<JobDto>> SearchAsync(JobSearch query, CancellationToken ct)
 
+    public async Task<PageResult<JobDto>> SearchAsync(JobSearch query, CancellationToken ct)
     {
         try
         {
@@ -70,10 +90,14 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.SearchAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.SearchAsync"
+            );
             throw;
         }
     }
+
     public async Task<JobDirectoryMetadata> GetJobFiltersAsync(CancellationToken ct)
     {
         try
@@ -86,10 +110,14 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.GetJobFiltersAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.GetJobFiltersAsync"
+            );
             throw;
         }
     }
+
     public async Task<JobDto> GetAsync(Guid id, CancellationToken ct)
     {
         try
@@ -102,20 +130,55 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.GetAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.GetAsync"
+            );
             throw;
         }
     }
+
     public async Task<JobDto> CreateAsync(CreateJobRequest request, CancellationToken ct)
     {
         try
         {
-            _ = await repository.GetCompanyAsync(request.CompanyId, ct) ?? throw new NotFoundException("Company not found.");
+            _ =
+                await repository.GetCompanyAsync(request.CompanyId, ct)
+                ?? throw new NotFoundException("Company not found.");
             var input = request.Job;
-            var provinceId = await repository.ResolveJobProvinceAsync(input.ProvinceId, input.Location, ct);
-            var job = new JobPost(request.CompanyId, input.Title, input.Description, input.Location, input.SalaryMin, input.SalaryMax, input.ExpiresAt);
-            job.SetCandidateDetails(input.Requirements, input.HiringProcess, input.Vacancies, input.GenderRequirement, input.AgeRequirement, input.RecruiterName, input.RecruiterTitle, input.RecruiterEmail);
-            job.SetDirectoryDetails(input.ExperienceLevel, input.PositionLevel, input.EmploymentType, input.SalaryPeriod, input.WorkSchedule, input.SalaryNote, input.Benefits);
+            var provinceId = await repository.ResolveJobProvinceAsync(
+                input.ProvinceId,
+                input.Location,
+                ct
+            );
+            var job = new JobPost(
+                request.CompanyId,
+                input.Title,
+                input.Description,
+                input.Location,
+                input.SalaryMin,
+                input.SalaryMax,
+                input.ExpiresAt
+            );
+            job.SetCandidateDetails(
+                input.Requirements,
+                input.HiringProcess,
+                input.Vacancies,
+                input.GenderRequirement,
+                input.AgeRequirement,
+                input.RecruiterName,
+                input.RecruiterTitle,
+                input.RecruiterEmail
+            );
+            job.SetDirectoryDetails(
+                input.ExperienceLevel,
+                input.PositionLevel,
+                input.EmploymentType,
+                input.SalaryPeriod,
+                input.WorkSchedule,
+                input.SalaryNote,
+                input.Benefits
+            );
             job.SetProvince(provinceId);
             repository.AddJob(job);
             await repository.SaveChangesAsync(ct);
@@ -127,21 +190,53 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.CreateAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.CreateAsync"
+            );
             throw;
         }
     }
+
     public async Task<JobDto> UpdateAsync(Guid id, SaveJobRequest input, CancellationToken ct)
     {
         try
         {
             var job = await FindAsync(id, ct);
-            var provinceId = await repository.ResolveJobProvinceAsync(input.ProvinceId, input.Location, ct);
+            var provinceId = await repository.ResolveJobProvinceAsync(
+                input.ProvinceId,
+                input.Location,
+                ct
+            );
             var retainedProvinceId = input.Location.Trim() == job.Location ? job.ProvinceId : null;
-            job.Update(input.Title, input.Description, input.Location, input.SalaryMin, input.SalaryMax, input.ExpiresAt);
+            job.Update(
+                input.Title,
+                input.Description,
+                input.Location,
+                input.SalaryMin,
+                input.SalaryMax,
+                input.ExpiresAt
+            );
             job.SetProvince(provinceId ?? retainedProvinceId);
-            job.SetCandidateDetails(input.Requirements, input.HiringProcess, input.Vacancies, input.GenderRequirement, input.AgeRequirement, input.RecruiterName, input.RecruiterTitle, input.RecruiterEmail);
-            job.SetDirectoryDetails(input.ExperienceLevel, input.PositionLevel, input.EmploymentType, input.SalaryPeriod, input.WorkSchedule, input.SalaryNote, input.Benefits);
+            job.SetCandidateDetails(
+                input.Requirements,
+                input.HiringProcess,
+                input.Vacancies,
+                input.GenderRequirement,
+                input.AgeRequirement,
+                input.RecruiterName,
+                input.RecruiterTitle,
+                input.RecruiterEmail
+            );
+            job.SetDirectoryDetails(
+                input.ExperienceLevel,
+                input.PositionLevel,
+                input.EmploymentType,
+                input.SalaryPeriod,
+                input.WorkSchedule,
+                input.SalaryNote,
+                input.Benefits
+            );
             await repository.SaveChangesAsync(ct);
             return Map(job);
         }
@@ -151,10 +246,14 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.UpdateAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.UpdateAsync"
+            );
             throw;
         }
     }
+
     public async Task CloseAsync(Guid id, CancellationToken ct)
     {
         try
@@ -169,16 +268,20 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.CloseAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.CloseAsync"
+            );
             throw;
         }
     }
-    private async Task<JobPost> FindAsync(Guid id, CancellationToken ct)
 
+    private async Task<JobPost> FindAsync(Guid id, CancellationToken ct)
     {
         try
         {
-            return await repository.GetJobAsync(id, ct) ?? throw new NotFoundException("Job not found.");
+            return await repository.GetJobAsync(id, ct)
+                ?? throw new NotFoundException("Job not found.");
         }
         catch (OperationCanceledException)
         {
@@ -186,15 +289,30 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.FindAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.FindAsync"
+            );
             throw;
         }
     }
+
     private static JobDto Map(JobPost job)
     {
         try
         {
-            return new(job.Id, job.CompanyId, job.Title, job.Description, job.Location, job.SalaryMin, job.SalaryMax, job.CreatedAt, job.ExpiresAt, job.IsClosed)
+            return new(
+                job.Id,
+                job.CompanyId,
+                job.Title,
+                job.Description,
+                job.Location,
+                job.SalaryMin,
+                job.SalaryMax,
+                job.CreatedAt,
+                job.ExpiresAt,
+                job.IsClosed
+            )
             {
                 Requirements = job.Requirements,
                 HiringProcess = job.HiringProcess,
@@ -215,7 +333,7 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
                 SalaryPeriod = job.SalaryPeriod,
                 WorkSchedule = job.WorkSchedule,
                 SalaryNote = job.SalaryNote,
-                Benefits = job.Benefits
+                Benefits = job.Benefits,
             };
         }
         catch (OperationCanceledException)
@@ -224,7 +342,10 @@ public sealed class RecruitmentService(IRecruitmentRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "RecruitmentService.Map");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "RecruitmentService.Map"
+            );
             throw;
         }
     }

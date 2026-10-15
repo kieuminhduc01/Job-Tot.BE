@@ -9,13 +9,13 @@ namespace JobTot.Api.Controllers;
 [Route("api/candidate/jobs/{id:guid}/application")]
 [Authorize(Policy = CandidateAuthentication.Policy)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class CandidateJobApplicationsController(IRecruitmentRepository repository) : ControllerBase
+public sealed class CandidateJobApplicationsController(IRecruitmentRepository repository)
+    : ControllerBase
 {
     private Guid AccountId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
     public async Task<ActionResult<JobSubmissionDto?>> Get(Guid id, CancellationToken ct)
-
     {
         try
         {
@@ -27,13 +27,20 @@ public sealed class CandidateJobApplicationsController(IRecruitmentRepository re
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobApplicationsController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobApplicationsController.Get"
+            );
             throw;
         }
     }
 
     [HttpPost]
-    public async Task<ActionResult<JobSubmissionDto>> Submit(Guid id, SubmitJobApplicationRequest input, CancellationToken ct)
+    public async Task<ActionResult<JobSubmissionDto>> Submit(
+        Guid id,
+        SubmitJobApplicationRequest input,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -46,7 +53,10 @@ public sealed class CandidateJobApplicationsController(IRecruitmentRepository re
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobApplicationsController.Submit");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobApplicationsController.Submit"
+            );
             throw;
         }
     }

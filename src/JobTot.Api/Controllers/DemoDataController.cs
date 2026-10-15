@@ -1,8 +1,8 @@
+using System.Text.Json;
 using JobTot.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace JobTot.Api.Controllers;
 
@@ -14,9 +14,21 @@ public sealed class DemoDataController(RecruitmentDbContext db) : ControllerBase
     {
         try
         {
-            if (key is not ("messages-candidate" or "messages-employer" or "auth-introduction" or "profile"))
+            if (
+                key
+                is not (
+                    "messages-candidate"
+                    or "messages-employer"
+                    or "auth-introduction"
+                    or "profile"
+                )
+            )
                 return NotFound();
-            var payload = await db.Set<DemoDataset>().AsNoTracking().Where(x => x.Key == key).Select(x => x.Payload).SingleOrDefaultAsync(ct);
+            var payload = await db.Set<DemoDataset>()
+                .AsNoTracking()
+                .Where(x => x.Key == key)
+                .Select(x => x.Payload)
+                .SingleOrDefaultAsync(ct);
             if (payload is null)
                 return NotFound();
             return Ok(JsonSerializer.Deserialize<JsonElement>(payload));
@@ -27,7 +39,10 @@ public sealed class DemoDataController(RecruitmentDbContext db) : ControllerBase
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "DemoDataController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "DemoDataController.Get"
+            );
             throw;
         }
     }

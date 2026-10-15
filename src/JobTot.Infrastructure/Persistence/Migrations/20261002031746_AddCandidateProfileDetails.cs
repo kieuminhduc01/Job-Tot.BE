@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -14,15 +14,14 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 name: "DetailsJson",
                 table: "CandidateProfile",
                 type: "nvarchar(max)",
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "DetailsJson",
-                table: "CandidateProfile");
+            migrationBuilder.DropColumn(name: "DetailsJson", table: "CandidateProfile");
         }
     }
 }

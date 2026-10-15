@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,9 +10,7 @@ namespace JobTot.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Account_Email",
-                table: "Account");
+            migrationBuilder.DropIndex(name: "IX_Account_Email", table: "Account");
 
             migrationBuilder.AlterColumn<string>(
                 name: "Email",
@@ -22,33 +20,32 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 nullable: true,
                 oldClrType: typeof(string),
                 oldType: "nvarchar(320)",
-                oldMaxLength: 320);
+                oldMaxLength: 320
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Account_Email",
                 table: "Account",
                 column: "Email",
                 unique: true,
-                filter: "[Email] IS NOT NULL");
+                filter: "[Email] IS NOT NULL"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Account_Phone",
                 table: "Account",
                 column: "Phone",
                 unique: true,
-                filter: "[Phone] IS NOT NULL");
+                filter: "[Phone] IS NOT NULL"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Account_Email",
-                table: "Account");
+            migrationBuilder.DropIndex(name: "IX_Account_Email", table: "Account");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Account_Phone",
-                table: "Account");
+            migrationBuilder.DropIndex(name: "IX_Account_Phone", table: "Account");
 
             migrationBuilder.AlterColumn<string>(
                 name: "Email",
@@ -60,13 +57,15 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(320)",
                 oldMaxLength: 320,
-                oldNullable: true);
+                oldNullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Account_Email",
                 table: "Account",
                 column: "Email",
-                unique: true);
+                unique: true
+            );
         }
     }
 }

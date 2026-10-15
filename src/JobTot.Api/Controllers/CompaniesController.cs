@@ -6,11 +6,16 @@ namespace JobTot.Api.Controllers;
 
 [ApiController]
 [Route("api/companies")]
-public sealed class CompaniesController(RecruitmentService service, ICompanyDirectoryRepository directory) : ControllerBase
+public sealed class CompaniesController(
+    RecruitmentService service,
+    ICompanyDirectoryRepository directory
+) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PageResult<CompanyListingDto>>> List([FromQuery] CompanySearch search, CancellationToken ct)
-
+    public async Task<ActionResult<PageResult<CompanyListingDto>>> List(
+        [FromQuery] CompanySearch search,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -22,13 +27,16 @@ public sealed class CompaniesController(RecruitmentService service, ICompanyDire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CompaniesController.List");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CompaniesController.List"
+            );
             throw;
         }
     }
+
     [HttpGet("filters")]
     public async Task<ActionResult<CompanyDirectoryMetadata>> Filters(CancellationToken ct)
-
     {
         try
         {
@@ -40,16 +48,29 @@ public sealed class CompaniesController(RecruitmentService service, ICompanyDire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CompaniesController.Filters");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CompaniesController.Filters"
+            );
             throw;
         }
     }
+
     [HttpGet("featured")]
     public async Task<ActionResult<IReadOnlyList<CompanyListingDto>>> Featured(CancellationToken ct)
     {
         try
         {
-            var result = await directory.SearchAsync(new CompanySearch { VerifiedOnly = true, HiringOnly = true, Sort = "jobs", PageSize = 4 }, ct);
+            var result = await directory.SearchAsync(
+                new CompanySearch
+                {
+                    VerifiedOnly = true,
+                    HiringOnly = true,
+                    Sort = "jobs",
+                    PageSize = 4,
+                },
+                ct
+            );
             return Ok(result.Items);
         }
         catch (OperationCanceledException)
@@ -58,13 +79,16 @@ public sealed class CompaniesController(RecruitmentService service, ICompanyDire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CompaniesController.Featured");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CompaniesController.Featured"
+            );
             throw;
         }
     }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CompanyDto>> Get(Guid id, CancellationToken ct)
-
     {
         try
         {
@@ -76,12 +100,19 @@ public sealed class CompaniesController(RecruitmentService service, ICompanyDire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CompaniesController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CompaniesController.Get"
+            );
             throw;
         }
     }
+
     [HttpPost]
-    public async Task<ActionResult<CompanyDto>> Create(CreateCompanyRequest request, CancellationToken ct)
+    public async Task<ActionResult<CompanyDto>> Create(
+        CreateCompanyRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -94,7 +125,10 @@ public sealed class CompaniesController(RecruitmentService service, ICompanyDire
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CompaniesController.Create");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CompaniesController.Create"
+            );
             throw;
         }
     }

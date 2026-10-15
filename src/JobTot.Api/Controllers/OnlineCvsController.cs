@@ -5,11 +5,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JobTot.Api.Controllers;
 
-[ApiController, Route("api/candidate/online-cvs"), Authorize(Policy = CandidateAuthentication.Policy)]
+[
+    ApiController,
+    Route("api/candidate/online-cvs"),
+    Authorize(Policy = CandidateAuthentication.Policy)
+]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class OnlineCvsController(ICvRepository repository) : ControllerBase
 {
     private Guid AccountId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -23,17 +28,22 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "OnlineCvsController.List");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "OnlineCvsController.List"
+            );
             throw;
         }
     }
+
     [HttpPost("from-template/{templateId:guid}")]
     public async Task<IActionResult> Create(Guid templateId, CancellationToken ct)
-
     {
         try
         {
-            return await repository.CreateAsync(AccountId, templateId, ct) is { } cv ? Created($"/api/candidate/online-cvs/{cv.Id}", cv) : NotFound();
+            return await repository.CreateAsync(AccountId, templateId, ct) is { } cv
+                ? Created($"/api/candidate/online-cvs/{cv.Id}", cv)
+                : NotFound();
         }
         catch (OperationCanceledException)
         {
@@ -41,13 +51,16 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "OnlineCvsController.Create");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "OnlineCvsController.Create"
+            );
             throw;
         }
     }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-
     {
         try
         {
@@ -59,10 +72,14 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "OnlineCvsController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "OnlineCvsController.Get"
+            );
             throw;
         }
     }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Save(Guid id, CvWrite input, CancellationToken ct)
     {
@@ -70,11 +87,19 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         {
             try
             {
-                return await repository.SaveAsync(AccountId, id, input, ct) is { } cv ? Ok(cv) : NotFound();
+                return await repository.SaveAsync(AccountId, id, input, ct) is { } cv
+                    ? Ok(cv)
+                    : NotFound();
             }
             catch (CvVersionConflictException)
             {
-                return Conflict(new ProblemDetails { Detail = "CV đã được chỉnh sửa ở tab khác. Hãy tải lại bản mới nhất trước khi tiếp tục." });
+                return Conflict(
+                    new ProblemDetails
+                    {
+                        Detail =
+                            "CV đã được chỉnh sửa ở tab khác. Hãy tải lại bản mới nhất trước khi tiếp tục.",
+                    }
+                );
             }
         }
         catch (OperationCanceledException)
@@ -83,10 +108,14 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "OnlineCvsController.Save");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "OnlineCvsController.Save"
+            );
             throw;
         }
     }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid version, CancellationToken ct)
     {
@@ -94,11 +123,18 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         {
             try
             {
-                return await repository.DeleteAsync(AccountId, id, version, ct) ? NoContent() : NotFound();
+                return await repository.DeleteAsync(AccountId, id, version, ct)
+                    ? NoContent()
+                    : NotFound();
             }
             catch (CvVersionConflictException)
             {
-                return Conflict(new ProblemDetails { Detail = "CV đã thay đổi. Hãy tải lại danh sách trước khi xóa." });
+                return Conflict(
+                    new ProblemDetails
+                    {
+                        Detail = "CV đã thay đổi. Hãy tải lại danh sách trước khi xóa.",
+                    }
+                );
             }
         }
         catch (OperationCanceledException)
@@ -107,7 +143,10 @@ public sealed class OnlineCvsController(ICvRepository repository) : ControllerBa
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "OnlineCvsController.Delete");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "OnlineCvsController.Delete"
+            );
             throw;
         }
     }

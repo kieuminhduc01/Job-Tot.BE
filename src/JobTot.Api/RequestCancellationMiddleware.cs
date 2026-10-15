@@ -13,7 +13,8 @@ public sealed class RequestCancellationMiddleware(RequestDelegate next)
         {
             await next(context);
         }
-        catch (Exception exception) when (RequestCancellation.IsClientCancellation(exception, context.RequestAborted))
+        catch (Exception exception)
+            when (RequestCancellation.IsClientCancellation(exception, context.RequestAborted))
         {
             CompleteAbortedRequest(context);
         }
@@ -21,8 +22,10 @@ public sealed class RequestCancellationMiddleware(RequestDelegate next)
         {
             CompleteAbortedRequest(context);
         }
-        catch (IOException exception) when (context.RequestAborted.IsCancellationRequested &&
-            exception.InnerException is System.Net.Sockets.SocketException)
+        catch (IOException exception)
+            when (context.RequestAborted.IsCancellationRequested
+                && exception.InnerException is System.Net.Sockets.SocketException
+            )
         {
             CompleteAbortedRequest(context);
         }

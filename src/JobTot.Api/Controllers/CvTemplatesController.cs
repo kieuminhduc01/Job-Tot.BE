@@ -19,13 +19,16 @@ public sealed class CvTemplatesController(ICvRepository repository) : Controller
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CvTemplatesController.List");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CvTemplatesController.List"
+            );
             throw;
         }
     }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-
     {
         try
         {
@@ -37,7 +40,10 @@ public sealed class CvTemplatesController(ICvRepository repository) : Controller
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CvTemplatesController.Get");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CvTemplatesController.Get"
+            );
             throw;
         }
     }

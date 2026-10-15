@@ -37,7 +37,8 @@ public sealed class RecruitmentCampaign : AuditableEntity
     public DateTimeOffset? ExpiresAt { get; set; }
     public string? PostingStatus { get; set; }
     public ICollection<CampaignSkill> CampaignSkills { get; set; } = new List<CampaignSkill>();
-    public ICollection<CampaignBenefit> CampaignBenefits { get; set; } = new List<CampaignBenefit>();
+    public ICollection<CampaignBenefit> CampaignBenefits { get; set; } =
+        new List<CampaignBenefit>();
     public ICollection<CampaignStage> CampaignStages { get; set; } = new List<CampaignStage>();
     public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
     public ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();

@@ -12,6 +12,7 @@ namespace JobTot.Api.Controllers;
 public sealed class CandidateJobsController(ICandidateJobsRepository repository) : ControllerBase
 {
     private Guid AccountId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet("saved-jobs")]
     public async Task<ActionResult<IReadOnlyList<Guid>>> Saved(CancellationToken ct)
     {
@@ -25,10 +26,14 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.Saved");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.Saved"
+            );
             throw;
         }
     }
+
     [HttpPut("saved-jobs/{id:guid}")]
     public async Task<IActionResult> Save(Guid id, CancellationToken ct)
     {
@@ -43,10 +48,14 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.Save");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.Save"
+            );
             throw;
         }
     }
+
     [HttpDelete("saved-jobs/{id:guid}")]
     public async Task<IActionResult> Unsave(Guid id, CancellationToken ct)
     {
@@ -61,13 +70,19 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.Unsave");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.Unsave"
+            );
             throw;
         }
     }
-    [HttpGet("my-jobs")]
-    public async Task<ActionResult<CandidateJobsDashboard>> Dashboard([FromQuery] CandidateJobsQuery query, CancellationToken ct)
 
+    [HttpGet("my-jobs")]
+    public async Task<ActionResult<CandidateJobsDashboard>> Dashboard(
+        [FromQuery] CandidateJobsQuery query,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -79,12 +94,19 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.Dashboard");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.Dashboard"
+            );
             throw;
         }
     }
+
     [HttpPut("my-jobs/status")]
-    public async Task<IActionResult> ReadyStatus(CandidateReadyStatusRequest request, CancellationToken ct)
+    public async Task<IActionResult> ReadyStatus(
+        CandidateReadyStatusRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -97,12 +119,19 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.ReadyStatus");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.ReadyStatus"
+            );
             throw;
         }
     }
+
     [HttpPut("my-jobs/availability")]
-    public async Task<IActionResult> Availability(CandidateAvailabilityRequest request, CancellationToken ct)
+    public async Task<IActionResult> Availability(
+        CandidateAvailabilityRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -115,10 +144,14 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.Availability");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.Availability"
+            );
             throw;
         }
     }
+
     [HttpPut("interviews/{id:guid}/confirm")]
     public async Task<IActionResult> ConfirmInterview(Guid id, CancellationToken ct)
     {
@@ -133,7 +166,10 @@ public sealed class CandidateJobsController(ICandidateJobsRepository repository)
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateJobsController.ConfirmInterview");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateJobsController.ConfirmInterview"
+            );
             throw;
         }
     }

@@ -4,7 +4,10 @@ using JobTot.Domain.Enums;
 
 namespace JobTot.Application.Authentication;
 
-public sealed class CandidateAuthService(ICandidateAuthRepository repository, IAccountPasswordHasher passwords)
+public sealed class CandidateAuthService(
+    ICandidateAuthRepository repository,
+    IAccountPasswordHasher passwords
+)
 {
     public const string CandidateRole = "Candidate";
     public const string ActiveStatus = "Active";
@@ -14,7 +17,13 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         try
         {
             var account = await repository.GetAsync(id, ct);
-            return account?.PasswordHash is { } hash ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(hash))) : null;
+            return account?.PasswordHash is { } hash
+                ? Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(hash)
+                    )
+                )
+                : null;
         }
         catch (OperationCanceledException)
         {
@@ -22,12 +31,18 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.GetPasswordStampAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.GetPasswordStampAsync"
+            );
             throw;
         }
     }
 
-    public async Task<CandidateAccountDto> RegisterAsync(CandidateRegisterRequest request, CancellationToken ct)
+    public async Task<CandidateAccountDto> RegisterAsync(
+        CandidateRegisterRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -42,13 +57,13 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
                 EmailVerifiedAt = identifier.Email != null ? DateTimeOffset.UtcNow : null,
                 Phone = identifier.Phone,
                 AccountType = CandidateRole,
-                AccountStatus = ActiveStatus
+                AccountStatus = ActiveStatus,
             };
             account.PasswordHash = passwords.Hash(account, request.Password);
             account.CandidateProfile = new CandidateProfile
             {
                 AccountId = account.Id,
-                Account = account
+                Account = account,
             };
             await repository.AddAsync(account, ct);
             return ToDto(account);
@@ -59,12 +74,18 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.RegisterAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.RegisterAsync"
+            );
             throw;
         }
     }
 
-    public async Task<CandidateAccountDto?> LoginAsync(CandidateLoginRequest request, CancellationToken ct)
+    public async Task<CandidateAccountDto?> LoginAsync(
+        CandidateLoginRequest request,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -73,7 +94,11 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
                 return null;
             var account = await repository.FindAsync(identifier!, ct);
             // The password implementation also performs a hash verification for unknown accounts.
-            var validPassword = passwords.Verify(account ?? new Account(), request.Password, out var rehash);
+            var validPassword = passwords.Verify(
+                account ?? new Account(),
+                request.Password,
+                out var rehash
+            );
             if (!validPassword || account is null || !IsActiveCandidate(account))
                 return null;
             if (rehash)
@@ -90,7 +115,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.LoginAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.LoginAsync"
+            );
             throw;
         }
     }
@@ -100,12 +128,12 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         try
         {
             var account = await repository.GetAsync(id, ct);
-            return account is not null && IsActiveCandidate(account) ? ToDto(account) with
-            {
-                AvatarUrl = await repository.GetAvatarUrlAsync(id, ct)
-            }
-
-            : null;
+            return account is not null && IsActiveCandidate(account)
+                ? ToDto(account) with
+                {
+                    AvatarUrl = await repository.GetAvatarUrlAsync(id, ct),
+                }
+                : null;
         }
         catch (OperationCanceledException)
         {
@@ -113,7 +141,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.GetActiveAsync");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.GetActiveAsync"
+            );
             throw;
         }
     }
@@ -122,7 +153,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
     {
         try
         {
-            return account.Status == EntityStatus.Active && account.AccountType == CandidateRole && account.AccountStatus == ActiveStatus && account.CandidateProfile?.Status == EntityStatus.Active;
+            return account.Status == EntityStatus.Active
+                && account.AccountType == CandidateRole
+                && account.AccountStatus == ActiveStatus
+                && account.CandidateProfile?.Status == EntityStatus.Active;
         }
         catch (OperationCanceledException)
         {
@@ -130,7 +164,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.IsActiveCandidate");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.IsActiveCandidate"
+            );
             throw;
         }
     }
@@ -139,9 +176,22 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
     {
         try
         {
-            return new(account.Id, account.CandidateProfile!.Id, account.FullName, account.Email, account.Phone, CandidateRole)
+            return new(
+                account.Id,
+                account.CandidateProfile!.Id,
+                account.FullName,
+                account.Email,
+                account.Phone,
+                CandidateRole
+            )
             {
-                AvatarUrl = account.CandidateProfile.DetailsJson is { } details ? System.Text.Json.JsonSerializer.Deserialize<JobTot.Application.Profiles.CandidateProfileDocument>(details)?.AvatarUrl : null
+                AvatarUrl = account.CandidateProfile.DetailsJson is { } details
+                    ? System
+                        .Text.Json.JsonSerializer.Deserialize<JobTot.Application.Profiles.CandidateProfileDocument>(
+                            details
+                        )
+                        ?.AvatarUrl
+                    : null,
             };
         }
         catch (OperationCanceledException)
@@ -150,7 +200,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.ToDto");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.ToDto"
+            );
             throw;
         }
     }
@@ -169,7 +222,10 @@ public sealed class CandidateAuthService(ICandidateAuthRepository repository, IA
         }
         catch (Exception exception)
         {
-            global::JobTot.Application.ExceptionDiagnostics.Record(exception, "CandidateAuthService.Validate");
+            global::JobTot.Application.ExceptionDiagnostics.Record(
+                exception,
+                "CandidateAuthService.Validate"
+            );
             throw;
         }
     }

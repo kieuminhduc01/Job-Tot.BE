@@ -22,15 +22,30 @@ public sealed partial class Company : AuditableEntity
     public int? CompanySizeMax { get; set; }
     public string? Culture { get; set; }
     public string? VerificationStatus { get; set; }
+
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public string DisplayName { get => Name; set => Name = value; }
+    public string DisplayName
+    {
+        get => Name;
+        set => Name = value;
+    }
+
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public string? About { get => Description; set => Description = value ?? string.Empty; }
+    public string? About
+    {
+        get => Description;
+        set => Description = value ?? string.Empty;
+    }
     public ICollection<CompanyMedia> CompanyMedias { get; set; } = new List<CompanyMedia>();
-    public ICollection<RecruiterProfile> RecruiterProfiles { get; set; } = new List<RecruiterProfile>();
-    public ICollection<RecruitmentCampaign> RecruitmentCampaigns { get; set; } = new List<RecruitmentCampaign>();
+    public ICollection<RecruiterProfile> RecruiterProfiles { get; set; } =
+        new List<RecruiterProfile>();
+    public ICollection<RecruitmentCampaign> RecruitmentCampaigns { get; set; } =
+        new List<RecruitmentCampaign>();
     public ICollection<TalentTag> TalentTags { get; set; } = new List<TalentTag>();
-    public ICollection<FollowedCompany> FollowedCompanys { get; set; } = new List<FollowedCompany>();
-    public ICollection<TalentPoolEntry> TalentPoolEntrys { get; set; } = new List<TalentPoolEntry>();
-    public ICollection<CompanyIndustry> CompanyIndustrys { get; set; } = new List<CompanyIndustry>();
+    public ICollection<FollowedCompany> FollowedCompanys { get; set; } =
+        new List<FollowedCompany>();
+    public ICollection<TalentPoolEntry> TalentPoolEntrys { get; set; } =
+        new List<TalentPoolEntry>();
+    public ICollection<CompanyIndustry> CompanyIndustrys { get; set; } =
+        new List<CompanyIndustry>();
 }

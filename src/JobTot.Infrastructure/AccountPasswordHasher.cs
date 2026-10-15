@@ -9,7 +9,8 @@ public sealed class AccountPasswordHasher : IAccountPasswordHasher
     private readonly PasswordHasher<Account> hasher = new();
     private readonly string dummyHash;
 
-    public AccountPasswordHasher() => dummyHash = hasher.HashPassword(new Account(), Guid.NewGuid().ToString());
+    public AccountPasswordHasher() =>
+        dummyHash = hasher.HashPassword(new Account(), Guid.NewGuid().ToString());
 
     public string Hash(Account account, string password) => hasher.HashPassword(account, password);
 
@@ -17,8 +18,18 @@ public sealed class AccountPasswordHasher : IAccountPasswordHasher
     {
         needsRehash = false;
         PasswordVerificationResult result;
-        try { result = hasher.VerifyHashedPassword(account, account.PasswordHash ?? dummyHash, password); }
-        catch (FormatException) { return false; }
+        try
+        {
+            result = hasher.VerifyHashedPassword(
+                account,
+                account.PasswordHash ?? dummyHash,
+                password
+            );
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
         needsRehash = result == PasswordVerificationResult.SuccessRehashNeeded;
         return account.PasswordHash is not null && result != PasswordVerificationResult.Failed;
     }

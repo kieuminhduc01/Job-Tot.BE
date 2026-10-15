@@ -94,10 +94,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("JobTot.Domain.Entities.AccountEmailChallenge", b =>
                 {
-                    b.Property<string>("PasswordStamp")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
@@ -121,6 +117,10 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PasswordStamp")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -619,12 +619,15 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CandidateId");
-
                     b.HasIndex("CvId");
 
                     b.HasIndex("JobId", "CandidateId")
                         .IsUnique();
+
+                    b.HasIndex("CandidateId", "AppliedAt", "Id")
+                        .IsDescending(false, true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CandidateId", "AppliedAt", "Id"), new[] { "JobId", "Status", "ReviewedAt", "CvTitle" });
 
                     b.ToTable("CandidateJobSubmissions");
                 });
@@ -759,6 +762,9 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CandidateId", "JobId")
                         .IsUnique();
+
+                    b.HasIndex("CandidateId", "SavedAt", "JobId")
+                        .IsDescending(false, true, false);
 
                     b.ToTable("CandidateSavedJobs");
                 });
@@ -1556,10 +1562,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CampaignId");
-
-                    b.HasIndex("CandidateId");
-
                     b.HasIndex("CreatedAccountId");
 
                     b.HasIndex("CvId");
@@ -1567,6 +1569,16 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("StageId");
 
                     b.HasIndex("UpdatedAccountId");
+
+                    b.HasIndex("CampaignId", "Status", "AppliedAt", "Id")
+                        .IsDescending(false, false, true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CampaignId", "Status", "AppliedAt", "Id"), new[] { "CandidateId", "ApplicationStatus", "Source" });
+
+                    b.HasIndex("CandidateId", "Status", "AppliedAt", "Id")
+                        .IsDescending(false, false, true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CandidateId", "Status", "AppliedAt", "Id"), new[] { "CampaignId", "ApplicationStatus" });
 
                     b.ToTable("Application", (string)null);
                 });
@@ -1684,13 +1696,16 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("IsClosed", "ExpiresAt");
 
                     b.HasIndex("ProvinceId", "IsClosed", "ExpiresAt");
+
+                    b.HasIndex("CompanyId", "IsClosed", "CreatedAt", "Id")
+                        .IsDescending(false, false, true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "IsClosed", "CreatedAt", "Id"), new[] { "ExpiresAt", "Title" });
 
                     b.ToTable("Jobs", null, t =>
                         {
@@ -1832,13 +1847,15 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
-
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("CreatedAccountId");
 
                     b.HasIndex("UpdatedAccountId");
+
+                    b.HasIndex("AccountId", "Status", "JoinedAt", "Id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("AccountId", "Status", "JoinedAt", "Id"), new[] { "CompanyId" });
 
                     b.ToTable("RecruiterProfile", (string)null);
                 });
@@ -1970,8 +1987,6 @@ namespace JobTot.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
                     b.HasIndex("CreatedAccountId");
 
                     b.HasIndex("EmploymentTypeId");
@@ -1983,6 +1998,11 @@ namespace JobTot.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProvinceId");
 
                     b.HasIndex("UpdatedAccountId");
+
+                    b.HasIndex("CompanyId", "Status", "CreatedDate", "Id")
+                        .IsDescending(false, false, true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "Status", "CreatedDate", "Id"), new[] { "CampaignStatus" });
 
                     b.ToTable("RecruitmentCampaign", (string)null);
                 });
